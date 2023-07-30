@@ -1,6 +1,10 @@
 package secman
 
-import "time"
+import (
+	"time"
+
+	"github.com/KarlGW/secman/internal/gob"
+)
 
 // Collection represents a collection of secrets.
 type Collection struct {
@@ -10,11 +14,11 @@ type Collection struct {
 
 // Encode a collection to a gob.
 func (c Collection) Encode() []byte {
-	encoded, _ := encodeToGob(c)
+	encoded, _ := gob.Encode(c)
 	return encoded
 }
 
 // Decode a collection from a gob.
 func (c *Collection) Decode(data []byte) error {
-	return decodeFromGob(data, c)
+	return gob.Decode(data, c)
 }
