@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/KarlGW/secman/security"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -45,6 +46,7 @@ func TestHandler_Sync(t *testing.T) {
 						},
 					},
 				},
+				key: _testKey,
 			},
 			want: Collection{
 				Secrets: []Secret{
@@ -80,6 +82,7 @@ func TestHandler_Sync(t *testing.T) {
 						},
 					},
 				},
+				key: _testKey,
 			},
 			want: Collection{
 				Secrets: []Secret{
@@ -105,6 +108,7 @@ func TestHandler_Sync(t *testing.T) {
 						},
 					},
 				},
+				key: _testKey,
 			},
 			want:    Collection{},
 			wantErr: nil,
@@ -137,8 +141,10 @@ func (stg *mockStorage) Save(data []byte) error {
 		return stg.err
 	}
 
+	decrypted, _ := security.Decrypt(data, _testKey)
+
 	var c Collection
-	if err := c.Decode(data); err != nil {
+	if err := c.Decode(decrypted); err != nil {
 		return err
 	}
 
@@ -151,5 +157,9 @@ func (stg mockStorage) Load() ([]byte, error) {
 		return nil, stg.err
 	}
 
-	return stg.collection.Encode(), nil
+	b := stg.collection.Encode()
+
+	encrypted, _ := security.Encrypt(b, _testKey)
+
+	return encrypted, nil
 }

@@ -1,5 +1,9 @@
 package secman
 
+import (
+	"github.com/KarlGW/secman/security"
+)
+
 // storage contains local and remote storage if any.
 type storage struct {
 	local  Storage
@@ -20,6 +24,7 @@ type Handler struct {
 	// storage contains the storage for the collection and a remote storage
 	// if any.
 	storage storage
+	key     *[32]byte
 }
 
 // Collection returns the current collection set to the handler.
@@ -34,32 +39,52 @@ func (h *Handler) Sync() error {
 		return nil
 	}
 
-	b, err := h.storage.local.Load()
+	localCollection, err := loadDecryptDecode(h.storage.local, h.key)
 	if err != nil {
 		return err
 	}
 
-	var localCollection Collection
-	if err := localCollection.Decode(b); err != nil {
-		return err
-	}
-
-	b, err = h.storage.remote.Load()
+	remoteCollection, err := loadDecryptDecode(h.storage.remote, h.key)
 	if err != nil {
-		return err
-	}
-
-	var remoteCollection Collection
-	if err := remoteCollection.Decode(b); err != nil {
 		return err
 	}
 
 	var collection Collection
+	var saveFunc func(data []byte) error
 	if remoteCollection.LastModified.After(localCollection.LastModified) {
-		h.collection = remoteCollection
-		return h.storage.local.Save(collection.Encode())
+		collection = remoteCollection
+		saveFunc = h.storage.local.Save
 	} else {
-		h.collection = localCollection
-		return h.storage.remote.Save(collection.Encode())
+		collection = localCollection
+		saveFunc = h.storage.remote.Save
 	}
+
+	h.collection = collection
+	encrypted, err := security.Encrypt(collection.Encode(), h.key)
+	if err != nil {
+		return err
+	}
+
+	return saveFunc(encrypted)
+}
+
+// loadDecryptDecode loads data from a storage, decrypts it and finally
+// decodes it.
+func loadDecryptDecode(storage Storage, key *[32]byte) (Collection, error) {
+	var collection Collection
+	b, err := storage.Load()
+	if err != nil {
+		return collection, err
+	}
+
+	decrypted, err := security.Decrypt(b, key)
+	if err != nil {
+		return collection, err
+	}
+
+	if err := collection.Decode(decrypted); err != nil {
+		return collection, err
+	}
+
+	return collection, nil
 }
