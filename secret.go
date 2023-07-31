@@ -7,11 +7,15 @@ import (
 	"github.com/google/uuid"
 )
 
+// Type represents the type of secret.
 type Type string
 
 const (
+	// TypeGeneric represents a generic secret.
 	TypeGeneric = iota
+	// TypeNote represents a secret note.
 	TypeNote
+	// TypeFile represents a secret file.
 	TypeFile
 )
 
@@ -37,7 +41,7 @@ type SecretOptions struct {
 	Updated     time.Time
 }
 
-type SecretOption func(s *SecretOptions)
+type SecretOption func(options *SecretOptions)
 
 // NewSecret creates a new secret.
 func NewSecret(name, value string, key *[32]byte, options ...SecretOption) Secret {
