@@ -1,6 +1,7 @@
 package security
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -64,8 +65,9 @@ func TestEncryptDecrypt(t *testing.T) {
 }
 
 func TestNewKeyFrom(t *testing.T) {
-	want := [32]byte{238, 38, 176, 221, 74, 247, 231, 73, 170, 26, 142, 227, 193, 10, 233, 146, 63, 97, 137, 128, 119, 46, 71, 63, 136, 25, 165, 212, 148, 14, 13, 178}
+	want := [32]byte{159, 134, 208, 129, 136, 76, 125, 101, 154, 47, 234, 160, 197, 90, 208, 21, 163, 191, 79, 27, 43, 11, 130, 44, 209, 93, 108, 21, 176, 240, 10, 8}
 	got := NewKeyFrom([]byte(`test`))
+	fmt.Println(got)
 
 	if diff := cmp.Diff(&want, got); diff != "" {
 		t.Errorf("NewKeyFrom() = unexpected result (-want +got)\n%s\n", diff)

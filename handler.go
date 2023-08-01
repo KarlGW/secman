@@ -1,7 +1,7 @@
 package secman
 
 import (
-	"github.com/KarlGW/secman/security"
+	"github.com/KarlGW/secman/internal/security"
 )
 
 // storage contains local and remote storage if any.

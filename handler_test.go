@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/KarlGW/secman/security"
+	"github.com/KarlGW/secman/internal/security"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )

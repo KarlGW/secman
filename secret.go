@@ -3,7 +3,7 @@ package secman
 import (
 	"time"
 
-	"github.com/KarlGW/secman/security"
+	"github.com/KarlGW/secman/internal/security"
 	"github.com/google/uuid"
 )
 

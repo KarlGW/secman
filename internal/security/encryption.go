@@ -6,7 +6,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"crypto/sha512"
+	"crypto/sha256"
 	"errors"
 	"io"
 )
@@ -80,10 +80,6 @@ func NewKey() *[32]byte {
 
 // NewKeyFrom creates a new key based on the provided data.
 func NewKeyFrom(b []byte) *[32]byte {
-	hash := sha512.Sum512(b)
-	out := [32]byte{}
-	for i, v := range hash[:32] {
-		out[i] = v
-	}
-	return &out
+	hash := sha256.Sum256(b)
+	return &hash
 }
