@@ -3,9 +3,9 @@ package storage
 import (
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
-	"path/filepath"
+
+	"github.com/KarlGW/secman/internal/fs"
 )
 
 var (
@@ -32,28 +32,15 @@ func NewFile(path string, options ...FileOption) *File {
 }
 
 // Save data to the file.
-func (f File) Save(data []byte) error {
-	dir := filepath.Dir(f.path)
-
-	// Check if directory exists. If not. Create it.
-	_, err := os.Stat(dir)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			if err := os.MkdirAll(dir, 0700); err != nil {
-				return fmt.Errorf("%w: %w", ErrFileStorage, err)
-			}
-		} else {
-			return fmt.Errorf("%w: %w", ErrFileStorage, err)
-		}
-	}
-
-	file, err := os.OpenFile(f.path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+func (f File) Save(data []byte) (err error) {
+	file, err := fs.OpenWithCreateIfNotExist(f.path)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrFileStorage, err)
 	}
+
 	defer func() {
-		if cerr := file.Close(); cerr != nil {
-			err = fmt.Errorf("%w: %w", ErrFileStorage, err)
+		if e := file.Close(); e != nil {
+			err = fmt.Errorf("%w: %w", ErrFileStorage, e)
 		}
 	}()
 
