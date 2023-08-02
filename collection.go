@@ -9,7 +9,7 @@ import (
 // Collection represents a collection of secrets.
 type Collection struct {
 	secrets       []Secret
-	lastModified  time.Time
+	updated       time.Time
 	secretsByID   map[string]int
 	secretsByName map[string]int
 }
@@ -62,7 +62,38 @@ func (c *Collection) Add(secret Secret) bool {
 
 	c.secretsByID[secret.ID] = index
 	c.secretsByName[secret.Name] = index
-	c.lastModified = now()
+	c.updated = now()
+	return true
+}
+
+// Update a secret.
+func (c *Collection) Update(secret Secret) bool {
+	i, ok := c.secretsByID[secret.ID]
+	if !ok {
+		return false
+	}
+	n := now()
+	s := c.secrets[i]
+
+	if len(secret.DisplayName) > 0 {
+		s.DisplayName = secret.DisplayName
+	}
+
+	if secret.Value != nil {
+		s.Value = secret.Value
+	}
+	if secret.Labels != nil {
+		s.Labels = secret.Labels
+	}
+	if secret.Tags != nil {
+		s.Tags = secret.Tags
+	}
+	s.Type = secret.Type
+	s.Updated = n
+
+	c.secrets[i] = s
+	c.updated = n
+
 	return true
 }
 
@@ -83,7 +114,7 @@ func (c *Collection) RemoveByID(id string) bool {
 	}
 
 	c.remove(i)
-	c.lastModified = now()
+	c.updated = now()
 
 	return true
 }
@@ -100,7 +131,7 @@ func (c *Collection) RemoveByName(name string) bool {
 	}
 
 	c.remove(i)
-	c.lastModified = now()
+	c.updated = now()
 
 	return true
 }
@@ -126,15 +157,15 @@ func (c *Collection) remove(i int) {
 	}
 }
 
-// LastModified returns when the collection was last modified.
-func (c Collection) LastModified() time.Time {
-	return c.lastModified
+// Updated returns when the collection was last modified.
+func (c Collection) Updated() time.Time {
+	return c.updated
 }
 
 // encodedCollection is used for encoding a collection.
 type encodedCollection struct {
 	Secrets       []Secret
-	LastModified  time.Time
+	Updated       time.Time
 	SecretsByID   map[string]int
 	SecretsByName map[string]int
 }
@@ -143,7 +174,7 @@ type encodedCollection struct {
 func (c Collection) Encode() []byte {
 	collection := encodedCollection{
 		Secrets:       c.secrets,
-		LastModified:  c.lastModified,
+		Updated:       c.updated,
 		SecretsByID:   c.secretsByID,
 		SecretsByName: c.secretsByName,
 	}
@@ -160,7 +191,7 @@ func (c *Collection) Decode(data []byte) error {
 	}
 
 	c.secrets = collection.Secrets
-	c.lastModified = collection.LastModified
+	c.updated = collection.Updated
 	c.secretsByID = collection.SecretsByID
 	c.secretsByName = collection.SecretsByName
 

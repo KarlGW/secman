@@ -22,7 +22,7 @@ func TestCollection_Encode_Decode(t *testing.T) {
 						Name: "secret",
 					},
 				},
-				lastModified: _testTime1,
+				updated: _testTime1,
 			},
 			want: Collection{
 				secrets: []Secret{
@@ -30,7 +30,7 @@ func TestCollection_Encode_Decode(t *testing.T) {
 						Name: "secret",
 					},
 				},
-				lastModified: _testTime1,
+				updated: _testTime1,
 			},
 			wantErr: nil,
 		},
@@ -72,22 +72,22 @@ func TestCollection_Add(t *testing.T) {
 				collection: Collection{},
 				secret: Secret{
 					ID:   "1",
-					Name: "secret",
+					Name: "secret-1",
 				},
 			},
 			want: Collection{
 				secrets: []Secret{
 					{
 						ID:   "1",
-						Name: "secret",
+						Name: "secret-1",
 					},
 				},
-				lastModified: _testLastModified,
+				updated: _testUpdated,
 				secretsByID: map[string]int{
 					"1": 0,
 				},
 				secretsByName: map[string]int{
-					"secret": 0,
+					"secret-1": 0,
 				},
 			},
 			wantResult: true,
@@ -138,7 +138,7 @@ func TestCollection_Add(t *testing.T) {
 						Name: "secret-3",
 					},
 				},
-				lastModified: _testLastModified,
+				updated: _testUpdated,
 				secretsByID: map[string]int{
 					"1": 0,
 					"2": 1,
@@ -177,7 +177,7 @@ func TestCollection_Add(t *testing.T) {
 						"secret-1": 0,
 						"secret-2": 1,
 					},
-					lastModified: time.Date(2023, 8, 2, 12, 30, 0, 0, time.Local),
+					updated: time.Date(2023, 8, 2, 12, 30, 0, 0, time.Local),
 				},
 				secret: Secret{
 					ID:   "1",
@@ -195,7 +195,7 @@ func TestCollection_Add(t *testing.T) {
 						Name: "secret-2",
 					},
 				},
-				lastModified: time.Date(2023, 8, 2, 12, 30, 0, 0, time.Local),
+				updated: time.Date(2023, 8, 2, 12, 30, 0, 0, time.Local),
 				secretsByID: map[string]int{
 					"1": 0,
 					"2": 1,
@@ -232,7 +232,7 @@ func TestCollection_Add(t *testing.T) {
 						"secret-1": 0,
 						"secret-2": 1,
 					},
-					lastModified: time.Date(2023, 8, 2, 12, 30, 0, 0, time.Local),
+					updated: time.Date(2023, 8, 2, 12, 30, 0, 0, time.Local),
 				},
 				secret: Secret{
 					ID:   "3",
@@ -250,7 +250,7 @@ func TestCollection_Add(t *testing.T) {
 						Name: "secret-2",
 					},
 				},
-				lastModified: time.Date(2023, 8, 2, 12, 30, 0, 0, time.Local),
+				updated: time.Date(2023, 8, 2, 12, 30, 0, 0, time.Local),
 				secretsByID: map[string]int{
 					"1": 0,
 					"2": 1,
@@ -267,8 +267,9 @@ func TestCollection_Add(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			now = func() time.Time {
-				return _testLastModified
+				return _testUpdated
 			}
+
 			gotResult := test.input.collection.Add(test.input.secret)
 			got := test.input.collection
 
@@ -280,6 +281,151 @@ func TestCollection_Add(t *testing.T) {
 				t.Errorf("Add() = unexpected result, want: %t, got: %t\n", test.wantResult, gotResult)
 			}
 
+		})
+	}
+}
+
+func TestCollection_Update(t *testing.T) {
+	var tests = []struct {
+		name  string
+		input struct {
+			collection Collection
+			secret     Secret
+		}
+		want       Collection
+		wantResult bool
+	}{
+		{
+			name: "Update a secret",
+			input: struct {
+				collection Collection
+				secret     Secret
+			}{
+				collection: Collection{
+					secrets: []Secret{
+						{
+							ID:      "1",
+							Name:    "secret-1",
+							Created: _testCreated,
+						},
+					},
+					secretsByID: map[string]int{
+						"1": 0,
+					},
+					secretsByName: map[string]int{
+						"secret-1": 0,
+					},
+				},
+				secret: Secret{
+					ID:          "1",
+					Name:        "secret-1",
+					Type:        TypeNote,
+					DisplayName: "Secret 1",
+					Value:       []byte(`test`),
+					Labels:      []string{"label"},
+					Tags: map[string]string{
+						"key": "val",
+					},
+					Created: _testCreated,
+				},
+			},
+			want: Collection{
+				secrets: []Secret{
+					{
+						ID:          "1",
+						Name:        "secret-1",
+						Type:        TypeNote,
+						DisplayName: "Secret 1",
+						Value:       []byte(`test`),
+						Labels:      []string{"label"},
+						Tags: map[string]string{
+							"key": "val",
+						},
+						Created: _testCreated,
+						Updated: _testUpdated,
+					},
+				},
+				secretsByID: map[string]int{
+					"1": 0,
+				},
+				secretsByName: map[string]int{
+					"secret-1": 0,
+				},
+				updated: _testUpdated,
+			},
+			wantResult: true,
+		},
+		{
+			name: "Update a secret - does not exist",
+			input: struct {
+				collection Collection
+				secret     Secret
+			}{
+				collection: Collection{
+					secrets: []Secret{
+						{
+							ID:      "1",
+							Name:    "secret-1",
+							Created: _testCreated,
+						},
+					},
+					secretsByID: map[string]int{
+						"1": 0,
+					},
+					secretsByName: map[string]int{
+						"secret-1": 0,
+					},
+					updated: _testCreated,
+				},
+				secret: Secret{
+					ID:          "2",
+					Name:        "secret-2",
+					Type:        TypeNote,
+					DisplayName: "Secret 2",
+					Value:       []byte(`test`),
+					Labels:      []string{"label"},
+					Tags: map[string]string{
+						"key": "val",
+					},
+					Created: _testCreated,
+				},
+			},
+			want: Collection{
+				secrets: []Secret{
+					{
+						ID:      "1",
+						Name:    "secret-1",
+						Created: _testCreated,
+					},
+				},
+				secretsByID: map[string]int{
+					"1": 0,
+				},
+				secretsByName: map[string]int{
+					"secret-1": 0,
+				},
+				updated: _testCreated,
+			},
+			wantResult: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			now = func() time.Time {
+				return _testUpdated
+			}
+
+			gotResult := test.input.collection.Update(test.input.secret)
+			got := test.input.collection
+
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{})); diff != "" {
+				t.Errorf("Update() = unexpected result (-want +got)\n%s\n", diff)
+			}
+
+			if test.wantResult != gotResult {
+				t.Errorf("Update() = unexpected result, want: %t, got: %t\n", test.wantResult, gotResult)
+			}
 		})
 	}
 }
@@ -318,7 +464,7 @@ func TestCollection_RemoveByID(t *testing.T) {
 			},
 			want: Collection{
 				secrets:       []Secret{},
-				lastModified:  _testLastModified,
+				updated:       _testUpdated,
 				secretsByID:   map[string]int{},
 				secretsByName: map[string]int{},
 			},
@@ -389,7 +535,7 @@ func TestCollection_RemoveByID(t *testing.T) {
 						Name: "secret-5",
 					},
 				},
-				lastModified: _testLastModified,
+				updated: _testUpdated,
 				secretsByID: map[string]int{
 					"1": 0,
 					"2": 1,
@@ -470,7 +616,7 @@ func TestCollection_RemoveByID(t *testing.T) {
 						Name: "secret-5",
 					},
 				},
-				lastModified: _testLastModified,
+				updated: _testUpdated,
 				secretsByID: map[string]int{
 					"2": 0,
 					"3": 1,
@@ -551,7 +697,7 @@ func TestCollection_RemoveByID(t *testing.T) {
 						Name: "secret-4",
 					},
 				},
-				lastModified: _testLastModified,
+				updated: _testUpdated,
 				secretsByID: map[string]int{
 					"1": 0,
 					"2": 1,
@@ -610,7 +756,7 @@ func TestCollection_RemoveByID(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			now = func() time.Time {
-				return _testLastModified
+				return _testUpdated
 			}
 
 			gotResult := test.input.collection.RemoveByID(test.input.id)
@@ -661,7 +807,7 @@ func TestCollection_RemoveByName(t *testing.T) {
 			},
 			want: Collection{
 				secrets:       []Secret{},
-				lastModified:  _testLastModified,
+				updated:       _testUpdated,
 				secretsByID:   map[string]int{},
 				secretsByName: map[string]int{},
 			},
@@ -732,7 +878,7 @@ func TestCollection_RemoveByName(t *testing.T) {
 						Name: "secret-5",
 					},
 				},
-				lastModified: _testLastModified,
+				updated: _testUpdated,
 				secretsByID: map[string]int{
 					"1": 0,
 					"2": 1,
@@ -813,7 +959,7 @@ func TestCollection_RemoveByName(t *testing.T) {
 						Name: "secret-5",
 					},
 				},
-				lastModified: _testLastModified,
+				updated: _testUpdated,
 				secretsByID: map[string]int{
 					"2": 0,
 					"3": 1,
@@ -894,7 +1040,7 @@ func TestCollection_RemoveByName(t *testing.T) {
 						Name: "secret-4",
 					},
 				},
-				lastModified: _testLastModified,
+				updated: _testUpdated,
 				secretsByID: map[string]int{
 					"1": 0,
 					"2": 1,
@@ -953,7 +1099,7 @@ func TestCollection_RemoveByName(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			now = func() time.Time {
-				return _testLastModified
+				return _testUpdated
 			}
 
 			gotResult := test.input.collection.RemoveByName(test.input.name)
