@@ -73,6 +73,10 @@ func (c *Collection) Remove(id string) bool {
 
 // RemoveByID removes a secret by the provided ID.
 func (c *Collection) RemoveByID(id string) bool {
+	if c.secretsByID == nil {
+		return false
+	}
+
 	i, ok := c.secretsByID[id]
 	if !ok {
 		return false
@@ -86,6 +90,10 @@ func (c *Collection) RemoveByID(id string) bool {
 
 // RemoveByID removes a secret by the provided name.
 func (c *Collection) RemoveByName(name string) bool {
+	if c.secretsByName == nil {
+		return false
+	}
+
 	i, ok := c.secretsByName[name]
 	if !ok {
 		return false
