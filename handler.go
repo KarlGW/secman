@@ -51,7 +51,7 @@ func (h *Handler) Sync() error {
 
 	var collection Collection
 	var saveFunc func(data []byte) error
-	if remoteCollection.LastModified.After(localCollection.LastModified) {
+	if remoteCollection.LastModified().After(localCollection.LastModified()) {
 		collection = remoteCollection
 		saveFunc = h.storage.local.Save
 	} else {

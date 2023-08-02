@@ -27,34 +27,34 @@ func TestHandler_Sync(t *testing.T) {
 				storage: storage{
 					local: &mockStorage{
 						collection: Collection{
-							Secrets: []Secret{
+							secrets: []Secret{
 								{
 									Name: "secret",
 								},
 							},
-							LastModified: _testTime2,
+							lastModified: _testTime2,
 						},
 					},
 					remote: &mockStorage{
 						collection: Collection{
-							Secrets: []Secret{
+							secrets: []Secret{
 								{
 									Name: "secret-old",
 								},
 							},
-							LastModified: _testTime1,
+							lastModified: _testTime1,
 						},
 					},
 				},
 				key: _testKey,
 			},
 			want: Collection{
-				Secrets: []Secret{
+				secrets: []Secret{
 					{
 						Name: "secret",
 					},
 				},
-				LastModified: _testTime2,
+				lastModified: _testTime2,
 			},
 		},
 		{
@@ -63,34 +63,34 @@ func TestHandler_Sync(t *testing.T) {
 				storage: storage{
 					local: &mockStorage{
 						collection: Collection{
-							Secrets: []Secret{
+							secrets: []Secret{
 								{
 									Name: "secret",
 								},
 							},
-							LastModified: _testTime1,
+							lastModified: _testTime1,
 						},
 					},
 					remote: &mockStorage{
 						collection: Collection{
-							Secrets: []Secret{
+							secrets: []Secret{
 								{
 									Name: "secret-new",
 								},
 							},
-							LastModified: _testTime2,
+							lastModified: _testTime2,
 						},
 					},
 				},
 				key: _testKey,
 			},
 			want: Collection{
-				Secrets: []Secret{
+				secrets: []Secret{
 					{
 						Name: "secret-new",
 					},
 				},
-				LastModified: _testTime2,
+				lastModified: _testTime2,
 			},
 		},
 		{
@@ -99,12 +99,12 @@ func TestHandler_Sync(t *testing.T) {
 				storage: storage{
 					local: &mockStorage{
 						collection: Collection{
-							Secrets: []Secret{
+							secrets: []Secret{
 								{
 									Name: "secret",
 								},
 							},
-							LastModified: _testTime2,
+							lastModified: _testTime2,
 						},
 					},
 				},
@@ -117,6 +117,10 @@ func TestHandler_Sync(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			now = func() time.Time {
+				return _testCreated
+			}
+
 			gotErr := test.input.Sync()
 			got := test.input.Collection()
 
@@ -163,3 +167,7 @@ func (stg mockStorage) Load() ([]byte, error) {
 
 	return encrypted, nil
 }
+
+var (
+	_testLastModified = time.Date(2023, 8, 2, 13, 30, 0, 0, time.Local)
+)

@@ -67,6 +67,11 @@ func NewSecret(name, value string, key *[32]byte, options ...SecretOption) Secre
 	return s
 }
 
+// Valid returns true if the secret is valid, false if not.
+func (s Secret) Valid() bool {
+	return len(s.ID) > 0 && len(s.Name) > 0
+}
+
 // now returns the current time.
 var now = func() time.Time {
 	return time.Now()
