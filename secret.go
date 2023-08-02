@@ -8,7 +8,7 @@ import (
 )
 
 // Type represents the type of secret.
-type Type string
+type Type int
 
 const (
 	// TypeGeneric represents a generic secret.
@@ -33,6 +33,7 @@ type Secret struct {
 	Updated time.Time
 }
 
+// SecretOptions contains options for a secret.
 type SecretOptions struct {
 	DisplayName string
 	Type        Type
@@ -41,6 +42,7 @@ type SecretOptions struct {
 	Updated     time.Time
 }
 
+// SecretOption is a function to set SecretOptions.
 type SecretOption func(options *SecretOptions)
 
 // NewSecret creates a new secret.

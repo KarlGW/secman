@@ -32,7 +32,7 @@ func TestHandler_Sync(t *testing.T) {
 									Name: "secret",
 								},
 							},
-							lastModified: _testTime2,
+							updated: _testTime2,
 						},
 					},
 					remote: &mockStorage{
@@ -42,7 +42,7 @@ func TestHandler_Sync(t *testing.T) {
 									Name: "secret-old",
 								},
 							},
-							lastModified: _testTime1,
+							updated: _testTime1,
 						},
 					},
 				},
@@ -54,7 +54,7 @@ func TestHandler_Sync(t *testing.T) {
 						Name: "secret",
 					},
 				},
-				lastModified: _testTime2,
+				updated: _testTime2,
 			},
 		},
 		{
@@ -68,7 +68,7 @@ func TestHandler_Sync(t *testing.T) {
 									Name: "secret",
 								},
 							},
-							lastModified: _testTime1,
+							updated: _testTime1,
 						},
 					},
 					remote: &mockStorage{
@@ -78,7 +78,7 @@ func TestHandler_Sync(t *testing.T) {
 									Name: "secret-new",
 								},
 							},
-							lastModified: _testTime2,
+							updated: _testTime2,
 						},
 					},
 				},
@@ -90,7 +90,7 @@ func TestHandler_Sync(t *testing.T) {
 						Name: "secret-new",
 					},
 				},
-				lastModified: _testTime2,
+				updated: _testTime2,
 			},
 		},
 		{
@@ -104,7 +104,7 @@ func TestHandler_Sync(t *testing.T) {
 									Name: "secret",
 								},
 							},
-							lastModified: _testTime2,
+							updated: _testTime2,
 						},
 					},
 				},
@@ -167,7 +167,3 @@ func (stg mockStorage) Load() ([]byte, error) {
 
 	return encrypted, nil
 }
-
-var (
-	_testLastModified = time.Date(2023, 8, 2, 13, 30, 0, 0, time.Local)
-)

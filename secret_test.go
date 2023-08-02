@@ -71,4 +71,5 @@ var (
 	_testKey          = security.NewKeyFrom([]byte("test"))
 	_testEncrypted, _ = security.Encrypt([]byte(_testValue), _testKey)
 	_testCreated      = time.Date(2023, 7, 30, 13, 30, 0, 0, time.Local)
+	_testUpdated      = time.Date(2023, 8, 2, 13, 30, 0, 0, time.Local)
 )
