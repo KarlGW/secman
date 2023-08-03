@@ -1,6 +1,8 @@
 package secman
 
 import (
+	"time"
+
 	"github.com/KarlGW/secman/internal/security"
 )
 
@@ -14,6 +16,7 @@ type storage struct {
 type Storage interface {
 	Save(data []byte) error
 	Load() ([]byte, error)
+	Updated() (time.Time, error)
 }
 
 // Handler represents a handler for collections and the

@@ -138,6 +138,7 @@ func TestHandler_Sync(t *testing.T) {
 type mockStorage struct {
 	collection Collection
 	err        error
+	updated    time.Time
 }
 
 func (stg *mockStorage) Save(data []byte) error {
@@ -166,4 +167,8 @@ func (stg mockStorage) Load() ([]byte, error) {
 	encrypted, _ := security.Encrypt(b, _testKey)
 
 	return encrypted, nil
+}
+
+func (stg mockStorage) Updated() (time.Time, error) {
+	return stg.updated, nil
 }

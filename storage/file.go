@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/KarlGW/secman/internal/fs"
 )
@@ -63,4 +64,13 @@ func (f File) Load() ([]byte, error) {
 	}
 
 	return b, nil
+}
+
+// Updated returns the time the file was last modified.
+func (f File) Updated() (time.Time, error) {
+	fi, err := os.Stat(f.path)
+	if err != nil {
+		return time.Time{}, nil
+	}
+	return fi.ModTime(), nil
 }
