@@ -42,24 +42,30 @@ func (h *Handler) Sync() error {
 		return nil
 	}
 
-	localCollection, err := loadDecryptDecode(h.storage.local, h.key)
+	localUpd, err := h.storage.local.Updated()
 	if err != nil {
 		return err
 	}
 
-	remoteCollection, err := loadDecryptDecode(h.storage.remote, h.key)
+	remoteUpd, err := h.storage.remote.Updated()
 	if err != nil {
 		return err
 	}
 
-	var collection Collection
-	var saveFunc func(data []byte) error
-	if remoteCollection.Updated().After(localCollection.Updated()) {
-		collection = remoteCollection
-		saveFunc = h.storage.local.Save
+	// Check if the remote storage is more recent. This is a shallow check on the state of the
+	// secrets. In further updates a deeper check should be made available.
+	var srcStg, dstStg Storage
+	if remoteUpd.After(localUpd) {
+		srcStg = h.storage.remote
+		dstStg = h.storage.local
 	} else {
-		collection = localCollection
-		saveFunc = h.storage.remote.Save
+		srcStg = h.storage.local
+		dstStg = h.storage.remote
+	}
+
+	collection, err := loadDecryptDecode(srcStg, h.key)
+	if err != nil {
+		return err
 	}
 
 	h.collection = collection
@@ -68,7 +74,7 @@ func (h *Handler) Sync() error {
 		return err
 	}
 
-	return saveFunc(encrypted)
+	return dstStg.Save(encrypted)
 }
 
 // loadDecryptDecode loads data from a storage, decrypts it and finally

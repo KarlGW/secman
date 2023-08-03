@@ -34,6 +34,7 @@ func TestHandler_Sync(t *testing.T) {
 							},
 							updated: _testTime2,
 						},
+						updated: _testTime2,
 					},
 					remote: &mockStorage{
 						collection: Collection{
@@ -44,6 +45,7 @@ func TestHandler_Sync(t *testing.T) {
 							},
 							updated: _testTime1,
 						},
+						updated: _testTime1,
 					},
 				},
 				key: _testKey,
@@ -70,6 +72,7 @@ func TestHandler_Sync(t *testing.T) {
 							},
 							updated: _testTime1,
 						},
+						updated: _testTime1,
 					},
 					remote: &mockStorage{
 						collection: Collection{
@@ -80,6 +83,7 @@ func TestHandler_Sync(t *testing.T) {
 							},
 							updated: _testTime2,
 						},
+						updated: _testTime2,
 					},
 				},
 				key: _testKey,
@@ -170,5 +174,6 @@ func (stg mockStorage) Load() ([]byte, error) {
 }
 
 func (stg mockStorage) Updated() (time.Time, error) {
+
 	return stg.updated, nil
 }
