@@ -17,8 +17,9 @@ const (
 
 // configuration for the application.
 type configuration struct {
-	path string
-	key  *[32]byte
+	path     string
+	key      *[32]byte
+	Profiles map[string]Profile `yaml:"profiles"`
 }
 
 // Option sets options to the configuration.
@@ -40,6 +41,7 @@ func Configure(options ...Option) (cfg configuration, err error) {
 	if err != nil {
 		return
 	}
+
 	defer func() {
 		if e := configFile.Close(); e != nil {
 			err = e
