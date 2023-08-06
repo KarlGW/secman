@@ -129,10 +129,3 @@ func (c *configuration) Save() (err error) {
 func (c configuration) Key() *[32]byte {
 	return c.key
 }
-
-// WithKey sets the key on the configuration.
-func WithKey(key *[32]byte) Option {
-	return func(c *configuration) {
-		c.key = key
-	}
-}
