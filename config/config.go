@@ -4,22 +4,27 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"os/user"
 	"path/filepath"
 
 	"github.com/KarlGW/secman/internal/fs"
+	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 )
 
 const (
-	dir        = ".secman"
-	configFile = "config.yaml"
+	application = "secman"
+	dir         = ".secman"
+	configFile  = "config.yaml"
 )
 
 // configuration for the application.
 type configuration struct {
 	path     string
 	key      *[32]byte
+	Profile  string             `yaml:"profile"`
 	Profiles map[string]Profile `yaml:"profiles"`
+	profile  Profile
 }
 
 // Option sets options to the configuration.
@@ -48,16 +53,35 @@ func Configure(options ...Option) (cfg configuration, err error) {
 		}
 	}()
 
-	b, err := io.ReadAll(configFile)
-	if err != nil {
+	if err = cfg.FromYAMLFile(configFile); err != nil {
 		return
 	}
 
-	if err = cfg.FromYAML(b); err != nil {
-		return
+	if len(cfg.Profile) == 0 {
+		user, err := user.Current()
+		if err != nil {
+			return cfg, err
+		}
+		cfg.Profile = user.Username
 	}
 
-	return cfg, err
+	if cfg.Profiles == nil {
+		cfg.Profiles = make(map[string]Profile)
+	}
+
+	profile, ok := cfg.Profiles[cfg.Profile]
+	if !ok {
+		profile = Profile{
+			ID:   uuid.New().String(),
+			Name: cfg.Profile,
+		}
+		cfg.Profiles[cfg.Profile] = profile
+		if err := cfg.Save(); err != nil {
+			return cfg, err
+		}
+	}
+
+	return
 }
 
 // YAML returns the YAML encoding of the configuration.
@@ -73,6 +97,16 @@ func (c configuration) YAML() []byte {
 // FromYAML sets configuration from yaml.
 func (c *configuration) FromYAML(b []byte) error {
 	return yaml.Unmarshal(b, c)
+}
+
+// FromYAMLFile sets configuration from a yaml file.
+func (c *configuration) FromYAMLFile(file *os.File) error {
+	b, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	return c.FromYAML(b)
 }
 
 // Save the configuration to local storage.
