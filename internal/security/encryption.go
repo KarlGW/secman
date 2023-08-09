@@ -19,7 +19,7 @@ var (
 )
 
 // Encrypt data with 256-bit AES-GCM encryption using the given key.
-func Encrypt(b []byte, key *[32]byte) ([]byte, error) {
+func Encrypt(b []byte, key [32]byte) ([]byte, error) {
 	block, err := aes.NewCipher(key[:])
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func Encrypt(b []byte, key *[32]byte) ([]byte, error) {
 }
 
 // Decrypt data encrypted with 256-bit AES-GCM encryption using the given key.
-func Decrypt(b []byte, key *[32]byte) ([]byte, error) {
+func Decrypt(b []byte, key [32]byte) ([]byte, error) {
 	block, err := aes.NewCipher(key[:])
 	if err != nil {
 		return nil, err
@@ -69,17 +69,17 @@ func Decrypt(b []byte, key *[32]byte) ([]byte, error) {
 }
 
 // NewKey generates a new random key for Encrypt/Decrypt.
-func NewKey() *[32]byte {
+func NewKey() [32]byte {
 	key := [32]byte{}
 	_, err := io.ReadFull(rand.Reader, key[:])
 	if err != nil {
 		panic(err)
 	}
-	return &key
+	return key
 }
 
 // NewKeyFrom creates a new key based on the provided data.
-func NewKeyFrom(b []byte) *[32]byte {
+func NewKeyFrom(b []byte) [32]byte {
 	hash := sha256.Sum256(b)
-	return &hash
+	return hash
 }

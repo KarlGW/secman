@@ -12,8 +12,8 @@ func TestEncryptDecrypt(t *testing.T) {
 		name  string
 		input struct {
 			b          []byte
-			encryptKey *[32]byte
-			decryptKey *[32]byte
+			encryptKey [32]byte
+			decryptKey [32]byte
 		}
 		want    []byte
 		wantErr error
@@ -22,8 +22,8 @@ func TestEncryptDecrypt(t *testing.T) {
 			name: "Encrypt and decrypt data",
 			input: struct {
 				b          []byte
-				encryptKey *[32]byte
-				decryptKey *[32]byte
+				encryptKey [32]byte
+				decryptKey [32]byte
 			}{
 				b:          []byte(`data`),
 				encryptKey: NewKeyFrom([]byte(`key`)),
@@ -36,8 +36,8 @@ func TestEncryptDecrypt(t *testing.T) {
 			name: "Encrypt and decrypt data - error, faulty key",
 			input: struct {
 				b          []byte
-				encryptKey *[32]byte
-				decryptKey *[32]byte
+				encryptKey [32]byte
+				decryptKey [32]byte
 			}{
 				b:          []byte(`data`),
 				encryptKey: NewKeyFrom([]byte(`key`)),
@@ -67,7 +67,7 @@ func TestNewKeyFrom(t *testing.T) {
 	want := [32]byte{159, 134, 208, 129, 136, 76, 125, 101, 154, 47, 234, 160, 197, 90, 208, 21, 163, 191, 79, 27, 43, 11, 130, 44, 209, 93, 108, 21, 176, 240, 10, 8}
 	got := NewKeyFrom([]byte(`test`))
 
-	if diff := cmp.Diff(&want, got); diff != "" {
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("NewKeyFrom() = unexpected result (-want +got)\n%s\n", diff)
 	}
 }
