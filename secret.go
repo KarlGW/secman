@@ -1,10 +1,16 @@
 package secman
 
 import (
+	"errors"
 	"time"
 
 	"github.com/KarlGW/secman/internal/security"
 	"github.com/google/uuid"
+)
+
+var (
+	// ErrInvalidKey is returned when the provided key is invalid.
+	ErrInvalidKey = errors.New("invalid key")
 )
 
 // Type represents the type of secret.
@@ -46,7 +52,7 @@ type SecretOptions struct {
 type SecretOption func(options *SecretOptions)
 
 // NewSecret creates a new secret.
-func NewSecret(name, value string, key *[32]byte, options ...SecretOption) Secret {
+func NewSecret(name, value string, key [32]byte, options ...SecretOption) Secret {
 	opts := SecretOptions{}
 	for _, option := range options {
 		option(&opts)
@@ -72,6 +78,15 @@ func NewSecret(name, value string, key *[32]byte, options ...SecretOption) Secre
 // Valid returns true if the secret is valid, false if not.
 func (s Secret) Valid() bool {
 	return len(s.ID) > 0 && len(s.Name) > 0
+}
+
+// Decrypt and return the Value of the Secret.
+func (s Secret) Decrypt(key [32]byte) (string, error) {
+	decrypted, err := security.Decrypt(s.Value, key)
+	if err != nil {
+		return "", err
+	}
+	return string(decrypted), nil
 }
 
 // now returns the current time.
