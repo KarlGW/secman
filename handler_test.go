@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/KarlGW/secman/internal/gob"
 	"github.com/KarlGW/secman/internal/security"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -24,29 +25,27 @@ func TestHandler_Sync(t *testing.T) {
 		{
 			name: "Sync - Local is newer",
 			input: Handler{
-				storage: storage{
-					local: &mockStorage{
-						collection: Collection{
-							secrets: []Secret{
-								{
-									Name: "secret",
-								},
+				storage: &mockStorage{
+					collection: Collection{
+						secrets: []Secret{
+							{
+								Name: "secret",
 							},
-							updated: _testTime2,
 						},
 						updated: _testTime2,
 					},
-					remote: &mockStorage{
-						collection: Collection{
-							secrets: []Secret{
-								{
-									Name: "secret-old",
-								},
+					updated: _testTime2,
+				},
+				secondaryStorage: &mockStorage{
+					collection: Collection{
+						secrets: []Secret{
+							{
+								Name: "secret-old",
 							},
-							updated: _testTime1,
 						},
 						updated: _testTime1,
 					},
+					updated: _testTime1,
 				},
 				key: _testKey,
 			},
@@ -62,29 +61,27 @@ func TestHandler_Sync(t *testing.T) {
 		{
 			name: "Sync - remote is newer",
 			input: Handler{
-				storage: storage{
-					local: &mockStorage{
-						collection: Collection{
-							secrets: []Secret{
-								{
-									Name: "secret",
-								},
+				storage: &mockStorage{
+					collection: Collection{
+						secrets: []Secret{
+							{
+								Name: "secret",
 							},
-							updated: _testTime1,
 						},
 						updated: _testTime1,
 					},
-					remote: &mockStorage{
-						collection: Collection{
-							secrets: []Secret{
-								{
-									Name: "secret-new",
-								},
+					updated: _testTime1,
+				},
+				secondaryStorage: &mockStorage{
+					collection: Collection{
+						secrets: []Secret{
+							{
+								Name: "secret-new",
 							},
-							updated: _testTime2,
 						},
 						updated: _testTime2,
 					},
+					updated: _testTime2,
 				},
 				key: _testKey,
 			},
@@ -100,16 +97,14 @@ func TestHandler_Sync(t *testing.T) {
 		{
 			name: "Sync - No remote set",
 			input: Handler{
-				storage: storage{
-					local: &mockStorage{
-						collection: Collection{
-							secrets: []Secret{
-								{
-									Name: "secret",
-								},
+				storage: &mockStorage{
+					collection: Collection{
+						secrets: []Secret{
+							{
+								Name: "secret",
 							},
-							updated: _testTime2,
 						},
+						updated: _testTime2,
 					},
 				},
 				key: _testKey,
@@ -128,7 +123,7 @@ func TestHandler_Sync(t *testing.T) {
 			gotErr := test.input.Sync()
 			got := test.input.Collection()
 
-			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{}, storage{}, mockStorage{})); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{}, mockStorage{})); diff != "" {
 				t.Errorf("Sync() = unexpected result (-want +got)\n%s\n", diff)
 			}
 
@@ -153,7 +148,7 @@ func (stg *mockStorage) Save(data []byte) error {
 	decrypted, _ := security.Decrypt(data, _testKey)
 
 	var c Collection
-	if err := c.Decode(decrypted); err != nil {
+	if err := gob.Decode(decrypted, &c); err != nil {
 		return err
 	}
 
@@ -166,7 +161,10 @@ func (stg mockStorage) Load() ([]byte, error) {
 		return nil, stg.err
 	}
 
-	b := stg.collection.Encode()
+	b, err := gob.Encode(stg.collection)
+	if err != nil {
+		return nil, err
+	}
 
 	encrypted, _ := security.Encrypt(b, _testKey)
 

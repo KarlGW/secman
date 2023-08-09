@@ -1,16 +1,19 @@
 package secman
 
 import (
+	"errors"
 	"time"
 
+	"github.com/KarlGW/secman/internal/gob"
 	"github.com/KarlGW/secman/internal/security"
 )
 
-// storage contains local and remote storage if any.
-type storage struct {
-	local  Storage
-	remote Storage
-}
+var (
+	// ErrProfileID is returned when no profile ID is provided.
+	ErrProfileID = errors.New("a profile ID must be provided")
+	// ErrStorage is returned when no storage is provided.
+	ErrStorage = errors.New("a storage path must be provided when using default storage")
+)
 
 // Storage is the interface that wraps around methods Save and Load.
 type Storage interface {
@@ -19,35 +22,66 @@ type Storage interface {
 	Updated() (time.Time, error)
 }
 
-// Handler represents a handler for collections and the
+// Handler represents a handler for a Collection and the
 // storage configurations.
 type Handler struct {
 	// collection contains a collection loaded by the handler.
-	collection Collection
-	// storage contains the storage for the collection and a remote storage
-	// if any.
-	storage storage
-	key     *[32]byte
+	collection       *Collection
+	storage          Storage
+	secondaryStorage Storage
+	key              [32]byte
+}
+
+// HandlerOptions contains options for a Handler.
+type HandlerOptions struct {
+	SecondaryStorage Storage
+}
+
+// HandlerOption is a function that sets HandlerOptions.
+type HandlerOption func(o *HandlerOptions)
+
+// NewHandler creates and returns a new Handler.
+func NewHandler(profileID string, key [32]byte, storage Storage, options ...HandlerOption) (Handler, error) {
+	if len(profileID) == 0 {
+		return Handler{}, ErrProfileID
+	}
+	if storage == nil {
+		return Handler{}, ErrStorage
+	}
+
+	opts := HandlerOptions{}
+	for _, option := range options {
+		option(&opts)
+	}
+
+	collection := NewCollection(profileID)
+
+	return Handler{
+		collection:       &collection,
+		storage:          storage,
+		secondaryStorage: opts.SecondaryStorage,
+		key:              key,
+	}, nil
 }
 
 // Collection returns the current collection set to the handler.
-func (h Handler) Collection() Collection {
+func (h Handler) Collection() *Collection {
 	return h.collection
 }
 
-// Sync current collection with collection from remote storage (if any).
+// Sync current collection with collection from secondary storage (if any).
 func (h *Handler) Sync() error {
-	if h.storage.remote == nil {
-		// No remote storage is set. Return nil.
+	if h.secondaryStorage == nil {
+		// No secondary storage is set. Return nil.
 		return nil
 	}
 
-	localUpd, err := h.storage.local.Updated()
+	updated, err := h.storage.Updated()
 	if err != nil {
 		return err
 	}
 
-	remoteUpd, err := h.storage.remote.Updated()
+	secondaryUpdated, err := h.secondaryStorage.Updated()
 	if err != nil {
 		return err
 	}
@@ -55,12 +89,12 @@ func (h *Handler) Sync() error {
 	// Check if the remote storage is more recent. This is a shallow check on the state of the
 	// secrets. In further updates a deeper check should be made available.
 	var srcStg, dstStg Storage
-	if remoteUpd.After(localUpd) {
-		srcStg = h.storage.remote
-		dstStg = h.storage.local
+	if secondaryUpdated.After(updated) {
+		srcStg = h.secondaryStorage
+		dstStg = h.storage
 	} else {
-		srcStg = h.storage.local
-		dstStg = h.storage.remote
+		srcStg = h.storage
+		dstStg = h.secondaryStorage
 	}
 
 	collection, err := loadDecryptDecode(srcStg, h.key)
@@ -68,18 +102,22 @@ func (h *Handler) Sync() error {
 		return err
 	}
 
-	h.collection = collection
-	encrypted, err := security.Encrypt(collection.Encode(), h.key)
+	h.collection = &collection
+
+	encoded, err := gob.Encode(h.collection)
 	if err != nil {
 		return err
 	}
-
+	encrypted, err := security.Encrypt(encoded, h.key)
+	if err != nil {
+		return err
+	}
 	return dstStg.Save(encrypted)
 }
 
 // loadDecryptDecode loads data from a storage, decrypts it and finally
 // decodes it.
-func loadDecryptDecode(storage Storage, key *[32]byte) (Collection, error) {
+func loadDecryptDecode(storage Storage, key [32]byte) (Collection, error) {
 	var collection Collection
 	b, err := storage.Load()
 	if err != nil {
@@ -91,9 +129,15 @@ func loadDecryptDecode(storage Storage, key *[32]byte) (Collection, error) {
 		return collection, err
 	}
 
-	if err := collection.Decode(decrypted); err != nil {
+	if err := gob.Decode(decrypted, &collection); err != nil {
 		return collection, err
 	}
-
 	return collection, nil
+}
+
+// WithSecondaryStorage sets secondary storage for the Handler.
+func WithSecondaryStorage(storage Storage) HandlerOption {
+	return func(o *HandlerOptions) {
+		o.SecondaryStorage = storage
+	}
 }
