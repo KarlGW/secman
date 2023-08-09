@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/KarlGW/secman/internal/gob"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -38,8 +39,9 @@ func TestCollection_Encode_Decode(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var got Collection
-			gotErr := got.Decode(test.input.Encode())
+			encoded, gotErr := gob.Encode(test.input)
+			got := Collection{}
+			gotErr = gob.Decode(encoded, &got)
 
 			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{})); diff != "" {
 				t.Errorf("Encode()/Decode() = unexpected result (-want +got)\n%s\n", diff)
@@ -83,10 +85,10 @@ func TestCollection_Add(t *testing.T) {
 					},
 				},
 				updated: _testUpdated,
-				secretsByID: map[string]int{
+				ids: map[string]int{
 					"1": 0,
 				},
-				secretsByName: map[string]int{
+				names: map[string]int{
 					"secret-1": 0,
 				},
 			},
@@ -109,11 +111,11 @@ func TestCollection_Add(t *testing.T) {
 							Name: "secret-2",
 						},
 					},
-					secretsByID: map[string]int{
+					ids: map[string]int{
 						"1": 0,
 						"2": 1,
 					},
-					secretsByName: map[string]int{
+					names: map[string]int{
 						"secret-1": 0,
 						"secret-2": 1,
 					},
@@ -139,12 +141,12 @@ func TestCollection_Add(t *testing.T) {
 					},
 				},
 				updated: _testUpdated,
-				secretsByID: map[string]int{
+				ids: map[string]int{
 					"1": 0,
 					"2": 1,
 					"3": 2,
 				},
-				secretsByName: map[string]int{
+				names: map[string]int{
 					"secret-1": 0,
 					"secret-2": 1,
 					"secret-3": 2,
@@ -169,11 +171,11 @@ func TestCollection_Add(t *testing.T) {
 							Name: "secret-2",
 						},
 					},
-					secretsByID: map[string]int{
+					ids: map[string]int{
 						"1": 0,
 						"2": 1,
 					},
-					secretsByName: map[string]int{
+					names: map[string]int{
 						"secret-1": 0,
 						"secret-2": 1,
 					},
@@ -196,11 +198,11 @@ func TestCollection_Add(t *testing.T) {
 					},
 				},
 				updated: time.Date(2023, 8, 2, 12, 30, 0, 0, time.Local),
-				secretsByID: map[string]int{
+				ids: map[string]int{
 					"1": 0,
 					"2": 1,
 				},
-				secretsByName: map[string]int{
+				names: map[string]int{
 					"secret-1": 0,
 					"secret-2": 1,
 				},
@@ -224,11 +226,11 @@ func TestCollection_Add(t *testing.T) {
 							Name: "secret-2",
 						},
 					},
-					secretsByID: map[string]int{
+					ids: map[string]int{
 						"1": 0,
 						"2": 1,
 					},
-					secretsByName: map[string]int{
+					names: map[string]int{
 						"secret-1": 0,
 						"secret-2": 1,
 					},
@@ -251,11 +253,11 @@ func TestCollection_Add(t *testing.T) {
 					},
 				},
 				updated: time.Date(2023, 8, 2, 12, 30, 0, 0, time.Local),
-				secretsByID: map[string]int{
+				ids: map[string]int{
 					"1": 0,
 					"2": 1,
 				},
-				secretsByName: map[string]int{
+				names: map[string]int{
 					"secret-1": 0,
 					"secret-2": 1,
 				},
@@ -309,10 +311,10 @@ func TestCollection_Update(t *testing.T) {
 							Created: _testCreated,
 						},
 					},
-					secretsByID: map[string]int{
+					ids: map[string]int{
 						"1": 0,
 					},
-					secretsByName: map[string]int{
+					names: map[string]int{
 						"secret-1": 0,
 					},
 				},
@@ -345,10 +347,10 @@ func TestCollection_Update(t *testing.T) {
 						Updated: _testUpdated,
 					},
 				},
-				secretsByID: map[string]int{
+				ids: map[string]int{
 					"1": 0,
 				},
-				secretsByName: map[string]int{
+				names: map[string]int{
 					"secret-1": 0,
 				},
 				updated: _testUpdated,
@@ -369,10 +371,10 @@ func TestCollection_Update(t *testing.T) {
 							Created: _testCreated,
 						},
 					},
-					secretsByID: map[string]int{
+					ids: map[string]int{
 						"1": 0,
 					},
-					secretsByName: map[string]int{
+					names: map[string]int{
 						"secret-1": 0,
 					},
 					updated: _testCreated,
@@ -398,10 +400,10 @@ func TestCollection_Update(t *testing.T) {
 						Created: _testCreated,
 					},
 				},
-				secretsByID: map[string]int{
+				ids: map[string]int{
 					"1": 0,
 				},
-				secretsByName: map[string]int{
+				names: map[string]int{
 					"secret-1": 0,
 				},
 				updated: _testCreated,
@@ -453,20 +455,20 @@ func TestCollection_RemoveByID(t *testing.T) {
 							Name: "secret-1",
 						},
 					},
-					secretsByID: map[string]int{
+					ids: map[string]int{
 						"1": 0,
 					},
-					secretsByName: map[string]int{
+					names: map[string]int{
 						"secret-1": 0,
 					},
 				},
 				id: "1",
 			},
 			want: Collection{
-				secrets:       []Secret{},
-				updated:       _testUpdated,
-				secretsByID:   map[string]int{},
-				secretsByName: map[string]int{},
+				secrets: []Secret{},
+				updated: _testUpdated,
+				ids:     map[string]int{},
+				names:   map[string]int{},
 			},
 			wantResult: true,
 		},
@@ -499,14 +501,14 @@ func TestCollection_RemoveByID(t *testing.T) {
 							Name: "secret-5",
 						},
 					},
-					secretsByID: map[string]int{
+					ids: map[string]int{
 						"1": 0,
 						"2": 1,
 						"3": 2,
 						"4": 3,
 						"5": 4,
 					},
-					secretsByName: map[string]int{
+					names: map[string]int{
 						"secret-1": 0,
 						"secret-2": 1,
 						"secret-3": 2,
@@ -536,13 +538,13 @@ func TestCollection_RemoveByID(t *testing.T) {
 					},
 				},
 				updated: _testUpdated,
-				secretsByID: map[string]int{
+				ids: map[string]int{
 					"1": 0,
 					"2": 1,
 					"4": 2,
 					"5": 3,
 				},
-				secretsByName: map[string]int{
+				names: map[string]int{
 					"secret-1": 0,
 					"secret-2": 1,
 					"secret-4": 2,
@@ -580,14 +582,14 @@ func TestCollection_RemoveByID(t *testing.T) {
 							Name: "secret-5",
 						},
 					},
-					secretsByID: map[string]int{
+					ids: map[string]int{
 						"1": 0,
 						"2": 1,
 						"3": 2,
 						"4": 3,
 						"5": 4,
 					},
-					secretsByName: map[string]int{
+					names: map[string]int{
 						"secret-1": 0,
 						"secret-2": 1,
 						"secret-3": 2,
@@ -617,13 +619,13 @@ func TestCollection_RemoveByID(t *testing.T) {
 					},
 				},
 				updated: _testUpdated,
-				secretsByID: map[string]int{
+				ids: map[string]int{
 					"2": 0,
 					"3": 1,
 					"4": 2,
 					"5": 3,
 				},
-				secretsByName: map[string]int{
+				names: map[string]int{
 					"secret-2": 0,
 					"secret-3": 1,
 					"secret-4": 2,
@@ -661,14 +663,14 @@ func TestCollection_RemoveByID(t *testing.T) {
 							Name: "secret-5",
 						},
 					},
-					secretsByID: map[string]int{
+					ids: map[string]int{
 						"1": 0,
 						"2": 1,
 						"3": 2,
 						"4": 3,
 						"5": 4,
 					},
-					secretsByName: map[string]int{
+					names: map[string]int{
 						"secret-1": 0,
 						"secret-2": 1,
 						"secret-3": 2,
@@ -698,13 +700,13 @@ func TestCollection_RemoveByID(t *testing.T) {
 					},
 				},
 				updated: _testUpdated,
-				secretsByID: map[string]int{
+				ids: map[string]int{
 					"1": 0,
 					"2": 1,
 					"3": 2,
 					"4": 3,
 				},
-				secretsByName: map[string]int{
+				names: map[string]int{
 					"secret-1": 0,
 					"secret-2": 1,
 					"secret-3": 2,
@@ -726,10 +728,10 @@ func TestCollection_RemoveByID(t *testing.T) {
 							Name: "secret-1",
 						},
 					},
-					secretsByID: map[string]int{
+					ids: map[string]int{
 						"1": 0,
 					},
-					secretsByName: map[string]int{
+					names: map[string]int{
 						"secret-1": 0,
 					},
 				},
@@ -742,10 +744,10 @@ func TestCollection_RemoveByID(t *testing.T) {
 						Name: "secret-1",
 					},
 				},
-				secretsByID: map[string]int{
+				ids: map[string]int{
 					"1": 0,
 				},
-				secretsByName: map[string]int{
+				names: map[string]int{
 					"secret-1": 0,
 				},
 			},
@@ -796,20 +798,20 @@ func TestCollection_RemoveByName(t *testing.T) {
 							Name: "secret-1",
 						},
 					},
-					secretsByID: map[string]int{
+					ids: map[string]int{
 						"1": 0,
 					},
-					secretsByName: map[string]int{
+					names: map[string]int{
 						"secret-1": 0,
 					},
 				},
 				name: "secret-1",
 			},
 			want: Collection{
-				secrets:       []Secret{},
-				updated:       _testUpdated,
-				secretsByID:   map[string]int{},
-				secretsByName: map[string]int{},
+				secrets: []Secret{},
+				updated: _testUpdated,
+				ids:     map[string]int{},
+				names:   map[string]int{},
 			},
 			wantResult: true,
 		},
@@ -842,14 +844,14 @@ func TestCollection_RemoveByName(t *testing.T) {
 							Name: "secret-5",
 						},
 					},
-					secretsByID: map[string]int{
+					ids: map[string]int{
 						"1": 0,
 						"2": 1,
 						"3": 2,
 						"4": 3,
 						"5": 4,
 					},
-					secretsByName: map[string]int{
+					names: map[string]int{
 						"secret-1": 0,
 						"secret-2": 1,
 						"secret-3": 2,
@@ -879,13 +881,13 @@ func TestCollection_RemoveByName(t *testing.T) {
 					},
 				},
 				updated: _testUpdated,
-				secretsByID: map[string]int{
+				ids: map[string]int{
 					"1": 0,
 					"2": 1,
 					"4": 2,
 					"5": 3,
 				},
-				secretsByName: map[string]int{
+				names: map[string]int{
 					"secret-1": 0,
 					"secret-2": 1,
 					"secret-4": 2,
@@ -923,14 +925,14 @@ func TestCollection_RemoveByName(t *testing.T) {
 							Name: "secret-5",
 						},
 					},
-					secretsByID: map[string]int{
+					ids: map[string]int{
 						"1": 0,
 						"2": 1,
 						"3": 2,
 						"4": 3,
 						"5": 4,
 					},
-					secretsByName: map[string]int{
+					names: map[string]int{
 						"secret-1": 0,
 						"secret-2": 1,
 						"secret-3": 2,
@@ -960,13 +962,13 @@ func TestCollection_RemoveByName(t *testing.T) {
 					},
 				},
 				updated: _testUpdated,
-				secretsByID: map[string]int{
+				ids: map[string]int{
 					"2": 0,
 					"3": 1,
 					"4": 2,
 					"5": 3,
 				},
-				secretsByName: map[string]int{
+				names: map[string]int{
 					"secret-2": 0,
 					"secret-3": 1,
 					"secret-4": 2,
@@ -1004,14 +1006,14 @@ func TestCollection_RemoveByName(t *testing.T) {
 							Name: "secret-5",
 						},
 					},
-					secretsByID: map[string]int{
+					ids: map[string]int{
 						"1": 0,
 						"2": 1,
 						"3": 2,
 						"4": 3,
 						"5": 4,
 					},
-					secretsByName: map[string]int{
+					names: map[string]int{
 						"secret-1": 0,
 						"secret-2": 1,
 						"secret-3": 2,
@@ -1041,13 +1043,13 @@ func TestCollection_RemoveByName(t *testing.T) {
 					},
 				},
 				updated: _testUpdated,
-				secretsByID: map[string]int{
+				ids: map[string]int{
 					"1": 0,
 					"2": 1,
 					"3": 2,
 					"4": 3,
 				},
-				secretsByName: map[string]int{
+				names: map[string]int{
 					"secret-1": 0,
 					"secret-2": 1,
 					"secret-3": 2,
@@ -1069,10 +1071,10 @@ func TestCollection_RemoveByName(t *testing.T) {
 							Name: "secret-1",
 						},
 					},
-					secretsByID: map[string]int{
+					ids: map[string]int{
 						"1": 0,
 					},
-					secretsByName: map[string]int{
+					names: map[string]int{
 						"secret-1": 0,
 					},
 				},
@@ -1085,10 +1087,10 @@ func TestCollection_RemoveByName(t *testing.T) {
 						Name: "secret-1",
 					},
 				},
-				secretsByID: map[string]int{
+				ids: map[string]int{
 					"1": 0,
 				},
-				secretsByName: map[string]int{
+				names: map[string]int{
 					"secret-1": 0,
 				},
 			},

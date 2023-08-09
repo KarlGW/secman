@@ -14,7 +14,7 @@ func TestNewSecret(t *testing.T) {
 		name  string
 		input struct {
 			name, value string
-			key         *[32]byte
+			key         [32]byte
 			options     []SecretOption
 		}
 		want      Secret
@@ -25,7 +25,7 @@ func TestNewSecret(t *testing.T) {
 			input: struct {
 				name    string
 				value   string
-				key     *[32]byte
+				key     [32]byte
 				options []SecretOption
 			}{
 				name:  "secret",
@@ -67,9 +67,8 @@ func TestNewSecret(t *testing.T) {
 }
 
 var (
-	_testValue        = "value"
-	_testKey          = security.NewKeyFrom([]byte("test"))
-	_testEncrypted, _ = security.Encrypt([]byte(_testValue), _testKey)
-	_testCreated      = time.Date(2023, 7, 30, 13, 30, 0, 0, time.Local)
-	_testUpdated      = time.Date(2023, 8, 2, 13, 30, 0, 0, time.Local)
+	_testValue   = "value"
+	_testKey     = security.NewKeyFrom([]byte("test"))
+	_testCreated = time.Date(2023, 7, 30, 13, 30, 0, 0, time.Local)
+	_testUpdated = time.Date(2023, 8, 2, 13, 30, 0, 0, time.Local)
 )
