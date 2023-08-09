@@ -2,29 +2,32 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"os"
 	"os/user"
 	"path/filepath"
 
 	"github.com/KarlGW/secman/internal/fs"
-	"github.com/google/uuid"
+	"github.com/KarlGW/secman/internal/security"
+	"github.com/zalando/go-keyring"
 	"gopkg.in/yaml.v3"
 )
 
 const (
-	application = "secman"
-	dir         = ".secman"
-	configFile  = "config.yaml"
+	application       = "secman"
+	dir               = ".secman"
+	configFile        = "config.yaml"
+	profilesFile      = "profiles.yaml"
+	storageFileSuffix = ".sec"
 )
 
 // configuration for the application.
 type configuration struct {
-	path     string
-	key      *[32]byte
-	Profile  string             `yaml:"profile"`
-	Profiles map[string]Profile `yaml:"profiles"`
-	profile  Profile
+	ProfileID   string `yaml:"profileId"`
+	path        string
+	storagePath string
+	key         [32]byte
 }
 
 // Option sets options to the configuration.
@@ -32,12 +35,16 @@ type Option func(c *configuration)
 
 // Configure creates and returns a configuration.
 func Configure(options ...Option) (cfg configuration, err error) {
-	home, err := os.UserHomeDir()
+	user, err := user.Current()
 	if err != nil {
 		return
 	}
 
-	cfg.path = filepath.Join(home, dir)
+	if len(user.HomeDir) == 0 {
+		return cfg, errors.New("home directory could not be determined")
+	}
+
+	cfg.path = filepath.Join(user.HomeDir, dir)
 	for _, option := range options {
 		option(&cfg)
 	}
@@ -47,40 +54,48 @@ func Configure(options ...Option) (cfg configuration, err error) {
 		return
 	}
 
+	profilesFile, err := fs.OpenWithCreateIfNotExist(filepath.Join(cfg.path, profilesFile))
+	if err != nil {
+		return
+	}
 	defer func() {
 		if e := configFile.Close(); e != nil {
 			err = e
 		}
+
+		if e := profilesFile.Close(); e != nil {
+			err = e
+		}
 	}()
 
-	if err = cfg.FromYAMLFile(configFile); err != nil {
+	if err = cfg.Load(configFile); err != nil {
 		return
 	}
 
-	if len(cfg.Profile) == 0 {
-		user, err := user.Current()
-		if err != nil {
-			return cfg, err
-		}
-		cfg.Profile = user.Username
+	profiles := profiles{
+		p:    make(map[string]profile),
+		path: filepath.Dir(profilesFile.Name()),
+	}
+	if err := profiles.Load(profilesFile); err != nil {
+		return cfg, err
 	}
 
-	if cfg.Profiles == nil {
-		cfg.Profiles = make(map[string]Profile)
-	}
+	profile := setupProfile(profiles, user.Username)
+	cfg.ProfileID = profile.ID
+	cfg.storagePath = filepath.Join(cfg.path, cfg.ProfileID+storageFileSuffix)
 
-	profile, ok := cfg.Profiles[cfg.Profile]
-	if !ok {
-		profile = Profile{
-			ID:   uuid.New().String(),
-			Name: cfg.Profile,
-		}
-		cfg.Profiles[cfg.Profile] = profile
-		if err := cfg.Save(); err != nil {
-			return cfg, err
-		}
+	key, err := setKey(profile.ID)
+	if err != nil {
+		return
 	}
+	cfg.key = key
 
+	if err := cfg.Save(); err != nil {
+		return cfg, err
+	}
+	if err := profiles.Save(); err != nil {
+		return cfg, err
+	}
 	return
 }
 
@@ -99,18 +114,17 @@ func (c *configuration) FromYAML(b []byte) error {
 	return yaml.Unmarshal(b, c)
 }
 
-// FromYAMLFile sets configuration from a yaml file.
-func (c *configuration) FromYAMLFile(file *os.File) error {
+// Load a configuration from a yaml file.
+func (c *configuration) Load(file *os.File) error {
 	b, err := io.ReadAll(file)
 	if err != nil {
 		return err
 	}
-
 	return c.FromYAML(b)
 }
 
-// Save the configuration to local storage.
-func (c *configuration) Save() (err error) {
+// Save the configuration to file.
+func (c configuration) Save() (err error) {
 	file, err := fs.OpenWithCreateIfNotExist(filepath.Join(c.path, configFile))
 	if err != nil {
 		return err
@@ -125,7 +139,32 @@ func (c *configuration) Save() (err error) {
 	return err
 }
 
-// Key returns the key configured the application.
-func (c configuration) Key() *[32]byte {
-	return c.key
+// setupProfile checks profiles for profile by name, and creates it if necessary.
+func setupProfile(profiles profiles, username string) profile {
+	p := profiles.GetByName(username)
+	if p == (profile{}) {
+		p = newProfile(username)
+		profiles.p[p.ID] = p
+	}
+	return p
+}
+
+// setKey sets key for the configuration. If kehy does not exist for the provided
+// profile ID, a new one will be created.
+func setKey(profileID string) ([32]byte, error) {
+	var key [32]byte
+	k, err := keyring.Get(application, profileID)
+	if err != nil {
+		if errors.Is(err, keyring.ErrNotFound) {
+			key = security.NewKey()
+			if err := keyring.Set(application, profileID, string(key[:])); err != nil {
+				return key, err
+			}
+			return key, nil
+		} else {
+			return key, err
+		}
+	}
+	copy(key[:], k)
+	return key, nil
 }
