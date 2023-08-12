@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"io"
 	"os"
@@ -27,7 +28,7 @@ type configuration struct {
 	ProfileID   string `yaml:"profileId"`
 	path        string
 	storagePath string
-	key         [32]byte
+	key         []byte
 }
 
 // Option sets options to the configuration.
@@ -139,6 +140,16 @@ func (c configuration) Save() (err error) {
 	return err
 }
 
+// Key returns the key set to the configuration.
+func (c configuration) Key() []byte {
+	return c.key
+}
+
+// StoragePath returns the storage path of the key file.
+func (c configuration) StoragePath() string {
+	return c.storagePath
+}
+
 // setupProfile checks profiles for profile by name, and creates it if necessary.
 func setupProfile(profiles profiles, username string) profile {
 	p := profiles.GetByName(username)
@@ -151,20 +162,54 @@ func setupProfile(profiles profiles, username string) profile {
 
 // setKey sets key for the configuration. If kehy does not exist for the provided
 // profile ID, a new one will be created.
-func setKey(profileID string) ([32]byte, error) {
-	var key [32]byte
-	k, err := keyring.Get(application, profileID)
+func setKey(profileID string) ([]byte, error) {
+	var item keyringItem
+	val, err := keyring.Get(application, profileID)
 	if err != nil {
 		if errors.Is(err, keyring.ErrNotFound) {
-			key = security.NewKey()
-			if err := keyring.Set(application, profileID, string(key[:])); err != nil {
-				return key, err
+			key, err := security.NewKey()
+			if err != nil {
+				return nil, nil
 			}
-			return key, nil
+			item = keyringItem{Key: key.Value}
+			if err := keyring.Set(application, profileID, string(item.Encode())); err != nil {
+				return nil, err
+			}
+			return item.Key, nil
 		} else {
-			return key, err
+			return nil, err
 		}
 	}
-	copy(key[:], k)
-	return key, nil
+	if err := item.Decode([]byte(val)); err != nil {
+		return nil, err
+	}
+	return item.Key, nil
+}
+
+// keyringItem contains a key for encryption, a secondary key
+// for encryption (if a secondary storage is used) and
+// a salted hashed password.
+type keyringItem struct {
+	// The encrption key for main storage.
+	Key []byte `json:"key"`
+	// The encryption key for secondary storage (if any).
+	SecondaryKey []byte `json:"secondaryKey"`
+	// Password set by user.
+	Password []byte `json:"password"`
+}
+
+// Encode the keyringItem to be stored in the keychain.
+func (i keyringItem) Encode() []byte {
+	b, _ := json.Marshal(i)
+	return b
+}
+
+// Decode data into a keyringItem.
+func (i *keyringItem) Decode(b []byte) error {
+	item := keyringItem{}
+	if err := json.Unmarshal(b, &item); err != nil {
+		return err
+	}
+	i.Key, i.SecondaryKey, i.Password = item.Key, item.SecondaryKey, item.Password
+	return nil
 }
