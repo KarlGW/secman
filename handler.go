@@ -16,7 +16,7 @@ var (
 	ErrStorage = errors.New("a storage path must be provided when using default storage")
 )
 
-// Storage is the interface that wraps around methods Save and Load.
+// Storage is the interface that wraps around methods Save, Load and Updated.
 type Storage interface {
 	Save(data []byte) error
 	Load() ([]byte, error)
