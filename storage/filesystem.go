@@ -10,8 +10,10 @@ import (
 )
 
 var (
-	// ErrFileSystem is used to wrap FileSystem storage errors.
-	ErrFileSystem = errors.New("file storage")
+	// ErrStorage is used to wrap general storage errors.
+	ErrStorage = errors.New("storage error")
+	// ErrStorageSourceNotFound is returned when storage source cannot be found.
+	ErrStorageSourceNotFound = errors.New("data source could not be found")
 )
 
 // FileSystem represents a storage in a file.
@@ -36,17 +38,17 @@ func NewFileSystem(path string, options ...FileSystemOption) FileSystem {
 func (f FileSystem) Save(data []byte) (err error) {
 	file, err := fs.OpenWithCreateIfNotExist(f.path)
 	if err != nil {
-		return fmt.Errorf("%w: %w", ErrFileSystem, err)
+		return fmt.Errorf("%w: %w", ErrStorageSourceNotFound, err)
 	}
 
 	defer func() {
 		if e := file.Close(); e != nil {
-			err = fmt.Errorf("%w: %w", ErrFileSystem, e)
+			err = fmt.Errorf("%w: %w", ErrStorage, e)
 		}
 	}()
 
 	if _, err := file.Write(data); err != nil {
-		return fmt.Errorf("%w: %w", ErrFileSystem, err)
+		return fmt.Errorf("%w: %w", ErrStorage, err)
 	}
 
 	return err
@@ -55,12 +57,12 @@ func (f FileSystem) Save(data []byte) (err error) {
 // Load data from the file.
 func (f FileSystem) Load() ([]byte, error) {
 	if _, err := os.Stat(f.path); err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrFileSystem, err)
+		return nil, fmt.Errorf("%w: %w", ErrStorageSourceNotFound, err)
 	}
 
 	b, err := os.ReadFile(f.path)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrFileSystem, err)
+		return nil, fmt.Errorf("%w: %w", ErrStorage, err)
 	}
 
 	return b, nil
