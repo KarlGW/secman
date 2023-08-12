@@ -10,7 +10,6 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"io"
 
 	"golang.org/x/crypto/argon2"
@@ -122,7 +121,6 @@ func NewKeyFromPassword(password []byte) (Key, error) {
 func ComparePasswordAndKey(password []byte, key Key) bool {
 	hash := idKey(password, key.Salt, 32)
 	if len(hash) != len(key.Value) {
-		fmt.Println("not same length")
 		return false
 	}
 	return subtle.ConstantTimeCompare(hash, key.Value) == 1
