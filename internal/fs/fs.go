@@ -51,16 +51,16 @@ func OpenWithCreateIfNotExist(path string, options ...FileOption) (*os.File, err
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			if err := os.MkdirAll(dir, opts.directoryPermissions); err != nil {
-				return nil, nil
+				return nil, err
 			}
 		} else {
 			return nil, err
 		}
 	}
 
-	file, ferr := os.OpenFile(path, os.O_CREATE|os.O_RDWR, opts.filePermissions)
-	if ferr != nil {
-		return nil, ferr
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, opts.filePermissions)
+	if err != nil {
+		return nil, err
 	}
 
 	if opts.close {
