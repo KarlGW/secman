@@ -12,8 +12,8 @@ func TestEncryptDecrypt(t *testing.T) {
 		name  string
 		input struct {
 			b          []byte
-			encryptKey [32]byte
-			decryptKey [32]byte
+			encryptKey Key
+			decryptKey Key
 		}
 		want    []byte
 		wantErr error
@@ -22,12 +22,12 @@ func TestEncryptDecrypt(t *testing.T) {
 			name: "Encrypt and decrypt data",
 			input: struct {
 				b          []byte
-				encryptKey [32]byte
-				decryptKey [32]byte
+				encryptKey Key
+				decryptKey Key
 			}{
 				b:          []byte(`data`),
-				encryptKey: NewKeyFrom([]byte(`key`)),
-				decryptKey: NewKeyFrom([]byte(`key`)),
+				encryptKey: _testKey1,
+				decryptKey: _testKey1,
 			},
 			want:    []byte(`data`),
 			wantErr: nil,
@@ -36,12 +36,12 @@ func TestEncryptDecrypt(t *testing.T) {
 			name: "Encrypt and decrypt data - error, faulty key",
 			input: struct {
 				b          []byte
-				encryptKey [32]byte
-				decryptKey [32]byte
+				encryptKey Key
+				decryptKey Key
 			}{
 				b:          []byte(`data`),
-				encryptKey: NewKeyFrom([]byte(`key`)),
-				decryptKey: NewKeyFrom([]byte(`wrongkey`)),
+				encryptKey: _testKey1,
+				decryptKey: _testKey2,
 			},
 			want:    nil,
 			wantErr: ErrInvalidKey,
@@ -50,8 +50,8 @@ func TestEncryptDecrypt(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			enc, gotErr := Encrypt(test.input.b, test.input.encryptKey)
-			got, gotErr := Decrypt(enc, test.input.decryptKey)
+			enc, gotErr := Encrypt(test.input.b, test.input.encryptKey.Value)
+			got, gotErr := Decrypt(enc, test.input.decryptKey.Value)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("Encrypt() = unexpected result (-want +got)\n%s\n", diff)
 			}
@@ -63,11 +63,7 @@ func TestEncryptDecrypt(t *testing.T) {
 	}
 }
 
-func TestNewKeyFrom(t *testing.T) {
-	want := [32]byte{159, 134, 208, 129, 136, 76, 125, 101, 154, 47, 234, 160, 197, 90, 208, 21, 163, 191, 79, 27, 43, 11, 130, 44, 209, 93, 108, 21, 176, 240, 10, 8}
-	got := NewKeyFrom([]byte(`test`))
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("NewKeyFrom() = unexpected result (-want +got)\n%s\n", diff)
-	}
-}
+var (
+	_testKey1, _ = NewKeyFromPassword([]byte("key"))
+	_testKey2, _ = NewKeyFromPassword([]byte("wrongkey"))
+)
