@@ -18,7 +18,7 @@ import (
 var (
 	// ErrMalformedData is returned with the provided data is erroneous.
 	ErrMalformedData = errors.New("malformed data")
-	// ErrInbalidKey is returned when the provided key is invalid.
+	// ErrInvalidKey is returned when the provided key is invalid.
 	ErrInvalidKey = errors.New("invalid key")
 	// ErrInvalidKeyLength
 	ErrInvalidKeyLength = errors.New("invalid key length, must be 32 bytes")
