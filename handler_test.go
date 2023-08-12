@@ -19,7 +19,7 @@ func TestHandler_Sync(t *testing.T) {
 	var tests = []struct {
 		name    string
 		input   Handler
-		want    Collection
+		want    *Collection
 		wantErr error
 	}{
 		{
@@ -47,9 +47,9 @@ func TestHandler_Sync(t *testing.T) {
 					},
 					updated: _testTime1,
 				},
-				key: _testKey,
+				key: _testKey.Value,
 			},
-			want: Collection{
+			want: &Collection{
 				secrets: []Secret{
 					{
 						Name: "secret",
@@ -83,9 +83,9 @@ func TestHandler_Sync(t *testing.T) {
 					},
 					updated: _testTime2,
 				},
-				key: _testKey,
+				key: _testKey.Value,
 			},
-			want: Collection{
+			want: &Collection{
 				secrets: []Secret{
 					{
 						Name: "secret-new",
@@ -107,9 +107,9 @@ func TestHandler_Sync(t *testing.T) {
 						updated: _testTime2,
 					},
 				},
-				key: _testKey,
+				key: _testKey.Value,
 			},
-			want:    Collection{},
+			want:    nil,
 			wantErr: nil,
 		},
 	}
@@ -145,7 +145,7 @@ func (stg *mockStorage) Save(data []byte) error {
 		return stg.err
 	}
 
-	decrypted, _ := security.Decrypt(data, _testKey)
+	decrypted, _ := security.Decrypt(data, _testKey.Value)
 
 	var c Collection
 	if err := gob.Decode(decrypted, &c); err != nil {
@@ -166,7 +166,7 @@ func (stg mockStorage) Load() ([]byte, error) {
 		return nil, err
 	}
 
-	encrypted, _ := security.Encrypt(b, _testKey)
+	encrypted, _ := security.Encrypt(b, _testKey.Value)
 
 	return encrypted, nil
 }
