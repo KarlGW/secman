@@ -52,7 +52,7 @@ type SecretOptions struct {
 type SecretOption func(options *SecretOptions)
 
 // NewSecret creates a new secret.
-func NewSecret(name, value string, key [32]byte, options ...SecretOption) Secret {
+func NewSecret(name, value string, key []byte, options ...SecretOption) Secret {
 	opts := SecretOptions{}
 	for _, option := range options {
 		option(&opts)
@@ -81,7 +81,7 @@ func (s Secret) Valid() bool {
 }
 
 // Decrypt and return the Value of the Secret.
-func (s Secret) Decrypt(key [32]byte) (string, error) {
+func (s Secret) Decrypt(key []byte) (string, error) {
 	decrypted, err := security.Decrypt(s.Value, key)
 	if err != nil {
 		return "", err

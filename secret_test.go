@@ -14,7 +14,7 @@ func TestNewSecret(t *testing.T) {
 		name  string
 		input struct {
 			name, value string
-			key         [32]byte
+			key         []byte
 			options     []SecretOption
 		}
 		want      Secret
@@ -25,12 +25,12 @@ func TestNewSecret(t *testing.T) {
 			input: struct {
 				name    string
 				value   string
-				key     [32]byte
+				key     []byte
 				options []SecretOption
 			}{
 				name:  "secret",
 				value: _testValue,
-				key:   _testKey,
+				key:   _testKey.Value,
 			},
 			want: Secret{
 				ID:      "aaaa",
@@ -57,7 +57,7 @@ func TestNewSecret(t *testing.T) {
 				t.Errorf("NewSecret() = unexpected result (-want +got)\n%s\n", diff)
 			}
 
-			gotValue, _ := security.Decrypt(got.Value, _testKey)
+			gotValue, _ := security.Decrypt(got.Value, _testKey.Value)
 			if test.wantValue != string(gotValue) {
 				t.Errorf("NewSecret() = unexpected value, want: %s, got: %s\n", test.wantValue, string(gotValue))
 			}
@@ -68,7 +68,7 @@ func TestNewSecret(t *testing.T) {
 
 var (
 	_testValue   = "value"
-	_testKey     = security.NewKeyFrom([]byte("test"))
+	_testKey, _  = security.NewKeyFromPassword([]byte("test"))
 	_testCreated = time.Date(2023, 7, 30, 13, 30, 0, 0, time.Local)
 	_testUpdated = time.Date(2023, 8, 2, 13, 30, 0, 0, time.Local)
 )
