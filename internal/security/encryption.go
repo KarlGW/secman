@@ -20,7 +20,7 @@ var (
 	ErrMalformedData = errors.New("malformed data")
 	// ErrInvalidKey is returned when the provided key is invalid.
 	ErrInvalidKey = errors.New("invalid key")
-	// ErrInvalidKeyLength
+	// ErrInvalidKeyLength is returned when the provided key is not the correct size.
 	ErrInvalidKeyLength = errors.New("invalid key length, must be 32 bytes")
 )
 
