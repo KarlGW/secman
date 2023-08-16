@@ -1,4 +1,4 @@
-package secman
+package secret
 
 import (
 	"testing"
@@ -47,7 +47,7 @@ func TestHandler_Sync(t *testing.T) {
 					},
 					updated: _testTime1,
 				},
-				key: _testKey.Value,
+				storageKey: _testKey,
 			},
 			want: &Collection{
 				secrets: []Secret{
@@ -83,7 +83,7 @@ func TestHandler_Sync(t *testing.T) {
 					},
 					updated: _testTime2,
 				},
-				key: _testKey.Value,
+				storageKey: _testKey,
 			},
 			want: &Collection{
 				secrets: []Secret{
@@ -107,7 +107,7 @@ func TestHandler_Sync(t *testing.T) {
 						updated: _testTime2,
 					},
 				},
-				key: _testKey.Value,
+				storageKey: _testKey,
 			},
 			want:    nil,
 			wantErr: nil,
@@ -123,7 +123,7 @@ func TestHandler_Sync(t *testing.T) {
 			gotErr := test.input.Sync()
 			got := test.input.Collection()
 
-			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{}, mockStorage{})); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{}, mockStorage{}), cmpopts.IgnoreUnexported(Secret{})); diff != "" {
 				t.Errorf("Sync() = unexpected result (-want +got)\n%s\n", diff)
 			}
 

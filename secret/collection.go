@@ -1,4 +1,4 @@
-package secman
+package secret
 
 import (
 	"bytes"

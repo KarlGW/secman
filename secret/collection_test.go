@@ -1,4 +1,4 @@
-package secman
+package secret
 
 import (
 	"testing"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/KarlGW/secman/internal/gob"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestCollection_Encode_Decode(t *testing.T) {
@@ -43,7 +44,7 @@ func TestCollection_Encode_Decode(t *testing.T) {
 			got := Collection{}
 			gotErr = gob.Decode(encoded, &got)
 
-			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{})); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{}), cmpopts.IgnoreUnexported(Secret{})); diff != "" {
 				t.Errorf("Encode()/Decode() = unexpected result (-want +got)\n%s\n", diff)
 			}
 
@@ -421,7 +422,7 @@ func TestCollection_Update(t *testing.T) {
 			gotResult := test.input.collection.Update(test.input.secret)
 			got := test.input.collection
 
-			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{})); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{}), cmpopts.IgnoreUnexported(Secret{})); diff != "" {
 				t.Errorf("Update() = unexpected result (-want +got)\n%s\n", diff)
 			}
 
@@ -764,7 +765,7 @@ func TestCollection_RemoveByID(t *testing.T) {
 			gotResult := test.input.collection.RemoveByID(test.input.id)
 			got := test.input.collection
 
-			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{})); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{}), cmpopts.IgnoreUnexported(Secret{})); diff != "" {
 				t.Errorf("RemoveByID() = unexpected result (-want +got)\n%s\n", diff)
 			}
 
@@ -1107,7 +1108,7 @@ func TestCollection_RemoveByName(t *testing.T) {
 			gotResult := test.input.collection.RemoveByName(test.input.name)
 			got := test.input.collection
 
-			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{})); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{}), cmpopts.IgnoreUnexported(Secret{})); diff != "" {
 				t.Errorf("RemoveByName() = unexpected result (-want +got)\n%s\n", diff)
 			}
 
