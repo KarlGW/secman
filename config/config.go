@@ -23,19 +23,21 @@ const (
 	storageFileSuffix = ".sec"
 )
 
-// configuration for the application.
-type configuration struct {
-	ProfileID   string `yaml:"profileId"`
-	path        string
+// Configuration for the application.
+type Configuration struct {
+	ProfileID string `yaml:"profileId"`
+	// path to the application files for a user.
+	path string
+	// storagePath is the path to the storage of the persistence file.
 	storagePath string
-	key         []byte
+	keyringItem keyringItem
 }
 
-// Option sets options to the configuration.
-type Option func(c *configuration)
+// Option sets options to the Configuration.
+type Option func(c *Configuration)
 
-// Configure creates and returns a configuration.
-func Configure(options ...Option) (cfg configuration, err error) {
+// Configure creates and returns a Configuration.
+func Configure(options ...Option) (cfg Configuration, err error) {
 	user, err := user.Current()
 	if err != nil {
 		return
@@ -69,39 +71,27 @@ func Configure(options ...Option) (cfg configuration, err error) {
 		}
 	}()
 
+	// Load existing config from file to Configuration.
 	if err = cfg.Load(configFile); err != nil {
 		return
 	}
 
-	profiles := profiles{
-		p:    make(map[string]profile),
-		path: filepath.Dir(profilesFile.Name()),
-	}
-	if err := profiles.Load(profilesFile); err != nil {
-		return cfg, err
-	}
-
-	profile := setupProfile(profiles, user.Username)
-	cfg.ProfileID = profile.ID
-	cfg.storagePath = filepath.Join(cfg.path, cfg.ProfileID+storageFileSuffix)
-
-	key, err := setKey(profile.ID)
-	if err != nil {
+	if err = cfg.setupProfileAndStoragePath(profilesFile, user.Username); err != nil {
 		return
 	}
-	cfg.key = key
 
-	if err := cfg.Save(); err != nil {
-		return cfg, err
+	if err = cfg.setKeyringItem(cfg.ProfileID); err != nil {
+		return
 	}
-	if err := profiles.Save(); err != nil {
+
+	if err = cfg.Save(); err != nil {
 		return cfg, err
 	}
 	return
 }
 
-// YAML returns the YAML encoding of the configuration.
-func (c configuration) YAML() []byte {
+// YAML returns the YAML encoding of the Configuration.
+func (c Configuration) YAML() []byte {
 	var buf bytes.Buffer
 	encoder := yaml.NewEncoder(&buf)
 	encoder.SetIndent(2)
@@ -110,13 +100,13 @@ func (c configuration) YAML() []byte {
 	return buf.Bytes()
 }
 
-// FromYAML sets configuration from yaml.
-func (c *configuration) FromYAML(b []byte) error {
+// FromYAML sets Configuration from yaml.
+func (c *Configuration) FromYAML(b []byte) error {
 	return yaml.Unmarshal(b, c)
 }
 
-// Load a configuration from a yaml file.
-func (c *configuration) Load(file *os.File) error {
+// Load a Configuration from a yaml file.
+func (c *Configuration) Load(file *os.File) error {
 	b, err := io.ReadAll(file)
 	if err != nil {
 		return err
@@ -124,8 +114,8 @@ func (c *configuration) Load(file *os.File) error {
 	return c.FromYAML(b)
 }
 
-// Save the configuration to file.
-func (c configuration) Save() (err error) {
+// Save the Configuration to file.
+func (c Configuration) Save() (err error) {
 	file, err := fs.OpenWithCreateIfNotExist(filepath.Join(c.path, configFile))
 	if err != nil {
 		return err
@@ -140,62 +130,79 @@ func (c configuration) Save() (err error) {
 	return err
 }
 
-// Key returns the key set to the configuration.
-func (c configuration) Key() []byte {
-	return c.key
+// SetKey sets the key to the configuration.
+func (c *Configuration) SetKey(key security.Key) error {
+	c.keyringItem.Key = key
+	return keyring.Set(application, c.ProfileID, string(c.keyringItem.Encode()))
+}
+
+// Key returns the key.
+func (c *Configuration) Key() security.Key {
+	return c.keyringItem.Key
+}
+
+// StorageKey returns the key for the storage file.
+func (c Configuration) StorageKey() security.Key {
+	return c.keyringItem.StorageKey
 }
 
 // StoragePath returns the storage path of the key file.
-func (c configuration) StoragePath() string {
+func (c Configuration) StoragePath() string {
 	return c.storagePath
 }
 
-// setupProfile checks profiles for profile by name, and creates it if necessary.
-func setupProfile(profiles profiles, username string) profile {
+// setupProfileAndStoragePath checks profiles for profile by name, and creates it if necessary.
+// Sets up storage path based on profile ID.
+func (c *Configuration) setupProfileAndStoragePath(profilesFile *os.File, username string) error {
+	profiles := profiles{
+		p:    make(map[string]profile),
+		path: filepath.Dir(profilesFile.Name()),
+	}
+	if err := profiles.Load(profilesFile); err != nil {
+		return err
+	}
+
 	p := profiles.GetByName(username)
 	if p == (profile{}) {
 		p = newProfile(username)
 		profiles.p[p.ID] = p
 	}
-	return p
+	c.ProfileID = p.ID
+	c.storagePath = filepath.Join(c.path, c.ProfileID+storageFileSuffix)
+
+	return profiles.Save()
 }
 
-// setKey sets key for the configuration. If kehy does not exist for the provided
+// setKeyringItem sets keys for the Configuration. If storage key does not exist for the provided
 // profile ID, a new one will be created.
-func setKey(profileID string) ([]byte, error) {
-	var item keyringItem
+func (c *Configuration) setKeyringItem(profileID string) error {
 	val, err := keyring.Get(application, profileID)
-	if err != nil {
-		if errors.Is(err, keyring.ErrNotFound) {
-			key, err := security.NewKey()
-			if err != nil {
-				return nil, nil
-			}
-			item = keyringItem{Key: key.Value}
-			if err := keyring.Set(application, profileID, string(item.Encode())); err != nil {
-				return nil, err
-			}
-			return item.Key, nil
-		} else {
-			return nil, err
+	if err == nil {
+		if err := c.keyringItem.Decode([]byte(val)); err != nil {
+			return err
 		}
+		return c.keyringItem.Decode([]byte(val))
 	}
-	if err := item.Decode([]byte(val)); err != nil {
-		return nil, err
+	if !errors.Is(err, keyring.ErrNotFound) {
+		return err
 	}
-	return item.Key, nil
+
+	key, err := security.NewKey()
+	if err != nil {
+		return nil
+	}
+	c.keyringItem = keyringItem{StorageKey: key}
+	return keyring.Set(application, profileID, string(c.keyringItem.Encode()))
 }
 
 // keyringItem contains a key for encryption, a secondary key
 // for encryption (if a secondary storage is used) and
 // a salted hashed password.
 type keyringItem struct {
-	// The encrption key for main storage.
-	Key []byte `json:"key"`
-	// The encryption key for secondary storage (if any).
-	SecondaryKey []byte `json:"secondaryKey"`
-	// Password set by user.
-	Password []byte `json:"password"`
+	// Key set by user. Contains hash.
+	Key security.Key `json:"key"`
+	// The key for main storage.
+	StorageKey security.Key `json:"storageKey"`
 }
 
 // Encode the keyringItem to be stored in the keychain.
@@ -210,6 +217,8 @@ func (i *keyringItem) Decode(b []byte) error {
 	if err := json.Unmarshal(b, &item); err != nil {
 		return err
 	}
-	i.Key, i.SecondaryKey, i.Password = item.Key, item.SecondaryKey, item.Password
+	i.Key, i.StorageKey = item.Key, item.StorageKey
 	return nil
 }
+
+type KeyringItem = keyringItem
