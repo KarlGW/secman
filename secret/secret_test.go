@@ -36,6 +36,7 @@ func TestNewSecret(t *testing.T) {
 			want: Secret{
 				ID:      "aaaa",
 				Name:    "secret",
+				Type:    TypeGeneric,
 				Created: _testCreated,
 			},
 			wantValue: _testValue,

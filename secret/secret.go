@@ -71,6 +71,10 @@ func NewSecret(name, value string, key []byte, options ...SecretOption) (Secret,
 		option(&opts)
 	}
 
+	if len(opts.Type) == 0 {
+		opts.Type = TypeGeneric
+	}
+
 	// Always make use of the provided value and key when creating
 	// a secret and ignore one provided by options.
 	encrypted, err := security.Encrypt([]byte(value), key)
@@ -114,7 +118,7 @@ func (s *Secret) Decrypt(options ...SecretOption) ([]byte, error) {
 }
 
 // Set options to a secret.
-func (s Secret) Set(options ...SecretOption) error {
+func (s *Secret) Set(options ...SecretOption) error {
 	opts := SecretOptions{}
 	for _, option := range options {
 		option(&opts)

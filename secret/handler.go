@@ -111,7 +111,7 @@ func (h *Handler) Load() error {
 
 // Save collection.
 func (h *Handler) Save() error {
-	return encodeEncryptSave(h.storage, *h.collection, h.storageKey.Value)
+	return encodeEncryptSave(h.storage, h.collection, h.storageKey.Value)
 }
 
 // Sync current collection with collection from secondary storage (if any).
@@ -148,7 +148,7 @@ func (h *Handler) Sync() error {
 	}
 
 	h.collection = &collection
-	return encodeEncryptSave(dstStg, *h.collection, h.storageKey.Value)
+	return encodeEncryptSave(dstStg, h.collection, h.storageKey.Value)
 }
 
 // GetSecretByID retrieves a secret by ID.
@@ -207,6 +207,7 @@ func (h Handler) UpdateSecretByID(id string, options ...SecretOption) (Secret, e
 	if !secret.Valid() {
 		return secret, ErrSecretNotFound
 	}
+	secret.key = h.key.Value
 
 	opts := SecretOptions{}
 	for _, option := range options {
@@ -282,11 +283,12 @@ func loadDecryptDecode(storage Storage, key []byte) (Collection, error) {
 }
 
 // encodeEncryptSave encrypt, encodes and finally saves data to storate.
-func encodeEncryptSave(storage Storage, collection Collection, key []byte) error {
+func encodeEncryptSave(storage Storage, collection *Collection, key []byte) error {
 	encoded, err := gob.Encode(collection)
 	if err != nil {
 		return err
 	}
+
 	encrypted, err := security.Encrypt(encoded, key)
 	if err != nil {
 		return err

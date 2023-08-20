@@ -2,6 +2,7 @@ package secret
 
 import (
 	"bytes"
+	"slices"
 	"time"
 
 	"encoding/gob"
@@ -169,7 +170,7 @@ func (c *Collection) RemoveByName(name string) error {
 
 // remove the secret by index and update the index maps.
 func (c *Collection) remove(i int) {
-	c.secrets = append(c.secrets[:i], c.secrets[i+1:]...)
+	c.secrets = slices.Delete(c.secrets, i, i+1)
 	for k, v := range c.ids {
 		if v == i {
 			delete(c.ids, k)
