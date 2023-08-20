@@ -4,6 +4,7 @@ import (
 	"syscall"
 
 	"github.com/KarlGW/secman/internal/security"
+	"github.com/KarlGW/secman/output"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/term"
 )
@@ -29,6 +30,7 @@ func Profile() *cli.Command {
 			}
 
 			if ctx.IsSet("password") {
+				output.Print("Enter password: ")
 				password, err := term.ReadPassword(int(syscall.Stdin))
 				if err != nil {
 					return err
@@ -37,7 +39,10 @@ func Profile() *cli.Command {
 				if err != nil {
 					return err
 				}
-				cfg.SetKey(key)
+				if err := cfg.SetKey(key); err != nil {
+					return err
+				}
+				output.PrintEmptyln()
 			}
 			return nil
 		},
