@@ -220,5 +220,3 @@ func (i *keyringItem) Decode(b []byte) error {
 	i.Key, i.StorageKey = item.Key, item.StorageKey
 	return nil
 }
-
-type KeyringItem = keyringItem
