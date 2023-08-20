@@ -35,16 +35,16 @@ func configuration(c *cli.Context) (config.Configuration, error) {
 
 // initHandler performs the necessary steps to setup a handler and
 // set it to the provided *cli.Context.
-func initHandler(c *cli.Context) (secret.Handler, error) {
+func initHandler(c *cli.Context) error {
 	config, err := configuration(c)
 	if err != nil {
-		return secret.Handler{}, err
+		return err
 	}
 	if len(config.StorageKey().Value) != secret.KeyLength {
-		return secret.Handler{}, errors.New("a key must be set for storage")
+		return errors.New("a key must be set for storage")
 	}
 	if len(config.Key().Value) != secret.KeyLength {
-		return secret.Handler{}, errors.New("a key must be set")
+		return errors.New("a key must be set")
 	}
 
 	handler, err := secret.NewHandler(
@@ -55,17 +55,17 @@ func initHandler(c *cli.Context) (secret.Handler, error) {
 		secret.WithLoadCollection(),
 	)
 	if err != nil {
-		return handler, err
+		return err
 	}
 	c.App.Metadata["handler"] = handler
-	return handler, nil
+	return nil
 }
 
 // handler retrieves the handler from the provided *cli.Context.
-func handler(c *cli.Context) (secret.Handler, error) {
-	handler, ok := c.App.Metadata["handler"].(secret.Handler)
+func handler(c *cli.Context) (*secret.Handler, error) {
+	handler, ok := c.App.Metadata["handler"].(*secret.Handler)
 	if !ok {
-		return secret.Handler{}, ErrUnableToRetieveHandler
+		return nil, ErrUnableToRetieveHandler
 	}
 	return handler, nil
 }
