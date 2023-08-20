@@ -36,7 +36,7 @@ func NewFileSystem(path string, options ...FileSystemOption) FileSystem {
 
 // Save data to the file.
 func (f FileSystem) Save(data []byte) (err error) {
-	file, err := fs.OpenWithCreateIfNotExist(f.path)
+	file, err := fs.OpenWithCreateIfNotExist(f.path, fs.WithTruncate())
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrStorageSourceNotFound, err)
 	}
