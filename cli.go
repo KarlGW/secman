@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/KarlGW/secman/command"
+	"github.com/KarlGW/secman/output"
 	"github.com/urfave/cli/v2"
 )
 
@@ -23,6 +24,7 @@ func CLI(args []string) int {
 	}
 
 	if err := app.Run(os.Args); err != nil {
+		output.PrintErrorln(err)
 		return 1
 	}
 	return 0
