@@ -22,6 +22,7 @@ type fileOptions struct {
 	directoryPermissions FileMode
 	filePermissions      FileMode
 	close                bool
+	truncate             bool
 }
 
 // FileOption is a function that sets file options.
@@ -36,7 +37,6 @@ func OpenWithCreateIfNotExist(path string, options ...FileOption) (*os.File, err
 			return nil, err
 		}
 	}
-
 	opts := fileOptions{
 		directoryPermissions: FileModeReadWriteExecute,
 		filePermissions:      FileModeReadWrite,
@@ -58,7 +58,14 @@ func OpenWithCreateIfNotExist(path string, options ...FileOption) (*os.File, err
 		}
 	}
 
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, opts.filePermissions)
+	var flag int
+	if opts.truncate {
+		flag = os.O_CREATE | os.O_RDWR | os.O_TRUNC
+	} else {
+		flag = os.O_CREATE | os.O_RDWR
+	}
+
+	file, err := os.OpenFile(path, flag, opts.filePermissions)
 	if err != nil {
 		return nil, err
 	}
@@ -90,5 +97,13 @@ func WithFilePermissions(perm FileMode) FileOption {
 func WithClose() FileOption {
 	return func(o *fileOptions) {
 		o.close = true
+	}
+}
+
+// WithTruncate sets that file should be truncated when opened
+// if it already exists.
+func WithTruncate() FileOption {
+	return func(o *fileOptions) {
+		o.truncate = true
 	}
 }
