@@ -114,17 +114,47 @@ func (s *Secret) Decrypt(options ...SecretOption) ([]byte, error) {
 }
 
 // Set options to a secret.
-func (s Secret) Set(options ...SecretOption) {
+func (s Secret) Set(options ...SecretOption) error {
 	opts := SecretOptions{}
 	for _, option := range options {
 		option(&opts)
 	}
 
+	// Check if a key is provided in options, and set it
+	// to key.
+	var key, previousKey []byte
+	if len(opts.key) > 0 {
+		previousKey = s.key
+		key = opts.key
+	} else {
+		key = s.key
+	}
+
+	if len(opts.Value) > 0 {
+		encrypted, err := security.Encrypt(opts.Value, key)
+		if err != nil {
+			return err
+		}
+		s.Value = encrypted
+	}
+
+	if previousKey != nil {
+		decrypted, err := security.Decrypt(s.Value, previousKey)
+		if err != nil {
+			return err
+		}
+		encrypted, err := security.Encrypt(decrypted, key)
+		if err != nil {
+			return err
+		}
+		s.Value = encrypted
+		// Since previous key has been set, make the update to
+		// the key in this block.
+		s.key = key
+	}
+
 	if len(opts.DisplayName) > 0 {
 		s.DisplayName = opts.DisplayName
-	}
-	if len(opts.Value) != 0 {
-		s.Value = opts.Value
 	}
 	if opts.Type != s.Type {
 		s.Type = opts.Type
@@ -135,12 +165,19 @@ func (s Secret) Set(options ...SecretOption) {
 	if len(opts.Tags) > 0 {
 		s.Tags = opts.Tags
 	}
+	return nil
 }
 
 // JSON returns the JSON encoding of Secret.
 func (s Secret) JSON() []byte {
 	b, _ := json.MarshalIndent(s, "", "  ")
 	return b
+}
+
+func WithValue(value []byte) SecretOption {
+	return func(o *SecretOptions) {
+		o.Value = value
+	}
 }
 
 // WithKey sets key to SecretOptions.

@@ -63,8 +63,8 @@ func TestCollection_Add(t *testing.T) {
 			collection Collection
 			secret     Secret
 		}
-		want       Collection
-		wantResult bool
+		want    Collection
+		wantErr error
 	}{
 		{
 			name: "Add secret to empty collection",
@@ -93,7 +93,7 @@ func TestCollection_Add(t *testing.T) {
 					"secret-1": 0,
 				},
 			},
-			wantResult: true,
+			wantErr: nil,
 		},
 		{
 			name: "Add secret to collection with existing secrets",
@@ -153,7 +153,7 @@ func TestCollection_Add(t *testing.T) {
 					"secret-3": 2,
 				},
 			},
-			wantResult: true,
+			wantErr: nil,
 		},
 		{
 			name: "Add secret to collection (secret with ID already exist)",
@@ -208,7 +208,7 @@ func TestCollection_Add(t *testing.T) {
 					"secret-2": 1,
 				},
 			},
-			wantResult: false,
+			wantErr: ErrSecretAlreadyExists,
 		},
 		{
 			name: "Add secret to collection (secret with name already exist)",
@@ -263,7 +263,7 @@ func TestCollection_Add(t *testing.T) {
 					"secret-2": 1,
 				},
 			},
-			wantResult: false,
+			wantErr: ErrSecretAlreadyExists,
 		},
 	}
 
@@ -273,17 +273,16 @@ func TestCollection_Add(t *testing.T) {
 				return _testUpdated
 			}
 
-			gotResult := test.input.collection.Add(test.input.secret)
+			gotErr := test.input.collection.Add(test.input.secret)
 			got := test.input.collection
 
 			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{}, Secret{})); diff != "" {
 				t.Errorf("Add() = unexpected result (-want +got)\n%s\n", diff)
 			}
 
-			if test.wantResult != gotResult {
-				t.Errorf("Add() = unexpected result, want: %t, got: %t\n", test.wantResult, gotResult)
+			if diff := cmp.Diff(test.wantErr, gotErr, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Add() = unexpected error (-want +got)\n%s\n", diff)
 			}
-
 		})
 	}
 }
@@ -295,8 +294,8 @@ func TestCollection_Update(t *testing.T) {
 			collection Collection
 			secret     Secret
 		}
-		want       Collection
-		wantResult bool
+		want    Collection
+		wantErr error
 	}{
 		{
 			name: "Update a secret",
@@ -356,7 +355,7 @@ func TestCollection_Update(t *testing.T) {
 				},
 				updated: _testUpdated,
 			},
-			wantResult: true,
+			wantErr: nil,
 		},
 		{
 			name: "Update a secret - does not exist",
@@ -409,7 +408,7 @@ func TestCollection_Update(t *testing.T) {
 				},
 				updated: _testCreated,
 			},
-			wantResult: false,
+			wantErr: ErrSecretNotFound,
 		},
 	}
 
@@ -419,15 +418,15 @@ func TestCollection_Update(t *testing.T) {
 				return _testUpdated
 			}
 
-			gotResult := test.input.collection.Update(test.input.secret)
+			gotErr := test.input.collection.Update(test.input.secret)
 			got := test.input.collection
 
 			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{}), cmpopts.IgnoreUnexported(Secret{})); diff != "" {
 				t.Errorf("Update() = unexpected result (-want +got)\n%s\n", diff)
 			}
 
-			if test.wantResult != gotResult {
-				t.Errorf("Update() = unexpected result, want: %t, got: %t\n", test.wantResult, gotResult)
+			if diff := cmp.Diff(test.wantErr, gotErr, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Update() = unexpected error (-want +got)\n%s\n", diff)
 			}
 		})
 	}
@@ -440,8 +439,8 @@ func TestCollection_RemoveByID(t *testing.T) {
 			collection Collection
 			id         string
 		}
-		want       Collection
-		wantResult bool
+		want    Collection
+		wantErr error
 	}{
 		{
 			name: "Remove a secret, one secret in collection",
@@ -471,7 +470,7 @@ func TestCollection_RemoveByID(t *testing.T) {
 				ids:     map[string]int{},
 				names:   map[string]int{},
 			},
-			wantResult: true,
+			wantErr: nil,
 		},
 		{
 			name: "Remove a secret from a collection of multiple secrets (remove from middle)",
@@ -552,7 +551,7 @@ func TestCollection_RemoveByID(t *testing.T) {
 					"secret-5": 3,
 				},
 			},
-			wantResult: true,
+			wantErr: nil,
 		},
 		{
 			name: "Remove a secret from a collection of multiple secrets (remove from beginning)",
@@ -633,7 +632,7 @@ func TestCollection_RemoveByID(t *testing.T) {
 					"secret-5": 3,
 				},
 			},
-			wantResult: true,
+			wantErr: nil,
 		},
 		{
 			name: "Remove a secret from a collection of multiple secrets (remove from end)",
@@ -714,7 +713,7 @@ func TestCollection_RemoveByID(t *testing.T) {
 					"secret-4": 3,
 				},
 			},
-			wantResult: true,
+			wantErr: nil,
 		},
 		{
 			name: "secret with id does not exist",
@@ -752,7 +751,7 @@ func TestCollection_RemoveByID(t *testing.T) {
 					"secret-1": 0,
 				},
 			},
-			wantResult: false,
+			wantErr: ErrSecretNotFound,
 		},
 	}
 
@@ -762,15 +761,15 @@ func TestCollection_RemoveByID(t *testing.T) {
 				return _testUpdated
 			}
 
-			gotResult := test.input.collection.RemoveByID(test.input.id)
+			gotErr := test.input.collection.RemoveByID(test.input.id)
 			got := test.input.collection
 
 			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{}), cmpopts.IgnoreUnexported(Secret{})); diff != "" {
 				t.Errorf("RemoveByID() = unexpected result (-want +got)\n%s\n", diff)
 			}
 
-			if test.wantResult != gotResult {
-				t.Errorf("RemoveByID() = unexpected result, want: %t, got: %t\n", test.wantResult, gotResult)
+			if diff := cmp.Diff(test.wantErr, gotErr, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("RemoveByID() = unexpected error (-want +got)\n%s\n", diff)
 			}
 		})
 	}
@@ -783,8 +782,8 @@ func TestCollection_RemoveByName(t *testing.T) {
 			collection Collection
 			name       string
 		}
-		want       Collection
-		wantResult bool
+		want    Collection
+		wantErr error
 	}{
 		{
 			name: "Remove a secret, one secret in collection",
@@ -814,7 +813,7 @@ func TestCollection_RemoveByName(t *testing.T) {
 				ids:     map[string]int{},
 				names:   map[string]int{},
 			},
-			wantResult: true,
+			wantErr: nil,
 		},
 		{
 			name: "Remove a secret from a collection of multiple secrets (remove from middle)",
@@ -895,7 +894,7 @@ func TestCollection_RemoveByName(t *testing.T) {
 					"secret-5": 3,
 				},
 			},
-			wantResult: true,
+			wantErr: nil,
 		},
 		{
 			name: "Remove a secret from a collection of multiple secrets (remove from beginning)",
@@ -976,7 +975,7 @@ func TestCollection_RemoveByName(t *testing.T) {
 					"secret-5": 3,
 				},
 			},
-			wantResult: true,
+			wantErr: nil,
 		},
 		{
 			name: "Remove a secret from a collection of multiple secrets (remove from end)",
@@ -1057,7 +1056,7 @@ func TestCollection_RemoveByName(t *testing.T) {
 					"secret-4": 3,
 				},
 			},
-			wantResult: true,
+			wantErr: nil,
 		},
 		{
 			name: "secret with name does not exist",
@@ -1095,7 +1094,7 @@ func TestCollection_RemoveByName(t *testing.T) {
 					"secret-1": 0,
 				},
 			},
-			wantResult: false,
+			wantErr: ErrSecretNotFound,
 		},
 	}
 
@@ -1105,16 +1104,17 @@ func TestCollection_RemoveByName(t *testing.T) {
 				return _testUpdated
 			}
 
-			gotResult := test.input.collection.RemoveByName(test.input.name)
+			gotErr := test.input.collection.RemoveByName(test.input.name)
 			got := test.input.collection
 
 			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Collection{}), cmpopts.IgnoreUnexported(Secret{})); diff != "" {
 				t.Errorf("RemoveByName() = unexpected result (-want +got)\n%s\n", diff)
 			}
 
-			if test.wantResult != gotResult {
-				t.Errorf("RemoveByName() = unexpected result, want: %t, got: %t\n", test.wantResult, gotResult)
+			if diff := cmp.Diff(test.wantErr, gotErr, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("RemoveByName() = unexpected error (-want +got)\n%s\n", diff)
 			}
+
 		})
 	}
 }

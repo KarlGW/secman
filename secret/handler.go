@@ -49,18 +49,18 @@ type HandlerOptions struct {
 type HandlerOption func(o *HandlerOptions)
 
 // NewHandler creates and returns a new Handler.
-func NewHandler(profileID string, storageKey, key security.Key, storage Storage, options ...HandlerOption) (Handler, error) {
+func NewHandler(profileID string, storageKey, key security.Key, storage Storage, options ...HandlerOption) (*Handler, error) {
 	if len(profileID) == 0 {
-		return Handler{}, ErrProfileID
+		return nil, ErrProfileID
 	}
 	if len(storageKey.Value) != KeyLength {
-		return Handler{}, ErrInvalidKeyLength
+		return nil, ErrInvalidKeyLength
 	}
 	if len(key.Value) != KeyLength {
-		return Handler{}, ErrInvalidKeyLength
+		return nil, ErrInvalidKeyLength
 	}
 	if storage == nil {
-		return Handler{}, ErrStorage
+		return nil, ErrStorage
 	}
 
 	opts := HandlerOptions{}
@@ -68,7 +68,7 @@ func NewHandler(profileID string, storageKey, key security.Key, storage Storage,
 		option(&opts)
 	}
 
-	handler := Handler{
+	handler := &Handler{
 		storage:          storage,
 		secondaryStorage: opts.SecondaryStorage,
 		storageKey:       storageKey,
@@ -190,8 +190,8 @@ func (h Handler) AddSecret(name, value string, options ...SecretOption) (Secret,
 	if err != nil {
 		return Secret{}, err
 	}
-	if !h.collection.Add(secret) {
-		return Secret{}, ErrSecretAlreadyExists
+	if err := h.collection.Add(secret); err != nil {
+		return secret, err
 	}
 
 	secret, err = h.GetSecretByID(secret.ID)
@@ -212,13 +212,15 @@ func (h Handler) UpdateSecretByID(id string, options ...SecretOption) (Secret, e
 	for _, option := range options {
 		option(&opts)
 	}
-	secret.Set(options...)
 
-	if !h.collection.Update(secret) {
-		return secret, ErrSecretNotFound
+	if err := secret.Set(options...); err != nil {
+		return secret, err
+	}
+	if err := h.collection.Update(secret); err != nil {
+		return secret, err
 	}
 
-	return secret, nil
+	return secret, h.Save()
 }
 
 // UpdateSecretByName updates a secret in the collection by name.
@@ -232,29 +234,31 @@ func (h Handler) UpdateSecretByName(name string, options ...SecretOption) (Secre
 	for _, option := range options {
 		option(&opts)
 	}
-	secret.Set(options...)
-
-	if !h.collection.Update(secret) {
-		return secret, ErrSecretNotFound
+	if err := secret.Set(options...); err != nil {
+		return secret, err
 	}
 
-	return secret, nil
+	if err := h.collection.Update(secret); err != nil {
+		return secret, err
+	}
+
+	return secret, h.Save()
 }
 
 // DeleteSecretByID deletes a secret by ID.
 func (h Handler) DeleteSecretByID(id string) error {
-	if !h.collection.RemoveByID(id) {
-		return ErrSecretNotFound
+	if err := h.collection.RemoveByID(id); err != nil {
+		return err
 	}
-	return nil
+	return h.Save()
 }
 
 // DeleteSecretByName deletes a secret by name.
 func (h Handler) DeleteSecretByName(name string) error {
-	if !h.collection.RemoveByName(name) {
-		return ErrSecretNotFound
+	if err := h.collection.RemoveByName(name); err != nil {
+		return err
 	}
-	return nil
+	return h.Save()
 }
 
 // loadDecryptDecode loads data from storage, decrypts it and finally
