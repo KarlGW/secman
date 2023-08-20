@@ -168,7 +168,7 @@ func (c *Configuration) setupProfileAndStoragePath(profilesFile *os.File, userna
 		profiles.p[p.ID] = p
 	}
 	c.ProfileID = p.ID
-	c.storagePath = filepath.Join(c.path, c.ProfileID+storageFileSuffix)
+	c.storagePath = filepath.Join(c.path, "collections", c.ProfileID+storageFileSuffix)
 
 	return profiles.Save()
 }
