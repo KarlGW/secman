@@ -1,26 +1,36 @@
 package output
 
 import (
-	"io"
-	"os"
+	"fmt"
 )
 
-// output is a structure containing a writer.
-type output struct {
-	writer io.Writer
+const (
+	reset  = "\033[0m"
+	red    = "\033[31m"
+	yellow = "\033[33m"
+)
+
+// Print to Stdout.
+func Print(a any) (int, error) {
+	return fmt.Print(a)
 }
 
-// Print the provided bytes to the configured io.Writer.
-func (o output) Print(b []byte) (int, error) {
-	return o.writer.Write(append(b, '\n'))
+// Print to Stdout with an added newline.
+func Println(a any) (int, error) {
+	return fmt.Println(a)
 }
 
-// defaultOutput is the default package level output handler.
-var defaultOutput = output{
-	writer: os.Stdout,
+// PrintError prints colour coded to Stdout.
+func PrintError(a any) (int, error) {
+	return fmt.Println(red, a, reset)
 }
 
-// Print the provided bytes to Stdout.
-func Print(b []byte) (int, error) {
-	return defaultOutput.Print(b)
+// PrintErrorln prints colour coded to Stdout with an added newline.
+func PrintErrorln(a any) (int, error) {
+	return fmt.Println(red, a, reset)
+}
+
+// PrintEmptyln prints an empty line.
+func PrintEmptyln() (int, error) {
+	return fmt.Println()
 }
