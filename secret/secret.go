@@ -178,6 +178,13 @@ func (s Secret) JSON() []byte {
 	return b
 }
 
+// WithValue sets the value to SecretOptions.
+func WithValue(value []byte) SecretOption {
+	return func(o *SecretOptions) {
+		o.Value = value
+	}
+}
+
 // WithKey sets key to SecretOptions.
 func WithKey(key []byte) SecretOption {
 	return func(o *SecretOptions) {
