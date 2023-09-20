@@ -2,6 +2,9 @@ package secret
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/KarlGW/secman/internal/security"
@@ -13,20 +16,59 @@ var (
 	ErrInvalidKeyLength = security.ErrInvalidKeyLength
 )
 
+var (
+	ErrSecretEncrypt = errors.New("encrypting secret")
+	ErrSecretDecrypt = errors.New("decrypting secret")
+)
+
 const (
 	KeyLength = security.KeyLength
 )
 
 // Type represents the type of secret.
-type Type string
+type Type uint8
+
+// String returns the string representation of a secret type.
+func (t Type) String() string {
+	switch t {
+	case TypeGeneric:
+		return "generic"
+	case TypeCredential:
+		return "credential"
+	case TypeNote:
+		return "note"
+	case TypeFile:
+		return "file"
+	}
+	return ""
+}
+
+// MarshalJSON marshals the Type to it's string representation
+// for JSON.
+func (t Type) MarshalJSON() ([]byte, error) {
+	return []byte("\"" + t.String() + "\""), nil
+}
+
+// UnmarhsalJSON unmarshals the Type to it's Type (uint8)
+// representaion.
+func (t *Type) UnmarhsalJSON(data []byte) error {
+	i, err := strconv.ParseUint("", 10, 8)
+	if err != nil {
+		return err
+	}
+	*t = Type(i)
+	return nil
+}
 
 const (
 	// TypeGeneric represents a generic secret.
-	TypeGeneric = "generic"
+	TypeGeneric Type = iota
+	// TypeCredential represents a credential secret.
+	TypeCredential
 	// TypeNote represents a secret note.
-	TypeNote = "note"
+	TypeNote
 	// TypeFile represents a secret file.
-	TypeFile = "file"
+	TypeFile
 )
 
 // Secret represents a secret and it's data.
@@ -71,15 +113,11 @@ func NewSecret(name, value string, key []byte, options ...SecretOption) (Secret,
 		option(&opts)
 	}
 
-	if len(opts.Type) == 0 {
-		opts.Type = TypeGeneric
-	}
-
 	// Always make use of the provided value and key when creating
 	// a secret and ignore one provided by options.
 	encrypted, err := security.Encrypt([]byte(value), key)
 	if err != nil {
-		return Secret{}, err
+		return Secret{}, fmt.Errorf("%w: %w", ErrSecretEncrypt, err)
 	}
 
 	return Secret{
@@ -112,7 +150,7 @@ func (s *Secret) Decrypt(options ...SecretOption) ([]byte, error) {
 
 	decrypted, err := security.Decrypt(s.Value, s.key)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", ErrSecretEncrypt, err)
 	}
 	return decrypted, nil
 }
@@ -137,7 +175,7 @@ func (s *Secret) Set(options ...SecretOption) error {
 	if len(opts.Value) > 0 {
 		encrypted, err := security.Encrypt(opts.Value, key)
 		if err != nil {
-			return err
+			return fmt.Errorf("%w: %w", ErrSecretEncrypt, err)
 		}
 		s.Value = encrypted
 	}
@@ -145,16 +183,14 @@ func (s *Secret) Set(options ...SecretOption) error {
 	if previousKey != nil {
 		decrypted, err := security.Decrypt(s.Value, previousKey)
 		if err != nil {
-			return err
+			return fmt.Errorf("%w: %w", ErrSecretDecrypt, err)
 		}
-		encrypted, err := security.Encrypt(decrypted, key)
+		s.key = key
+		encrypted, err := security.Encrypt(decrypted, s.key)
 		if err != nil {
-			return err
+			return fmt.Errorf("%w: %w", ErrSecretEncrypt, err)
 		}
 		s.Value = encrypted
-		// Since previous key has been set, make the update to
-		// the key in this block.
-		s.key = key
 	}
 
 	if len(opts.DisplayName) > 0 {
@@ -174,6 +210,15 @@ func (s *Secret) Set(options ...SecretOption) error {
 
 // JSON returns the JSON encoding of Secret.
 func (s Secret) JSON() []byte {
+	b, _ := json.MarshalIndent(s, "", "  ")
+	return b
+}
+
+// Secrets is a slice of Secret.
+type Secrets []Secret
+
+// JSON returns the JSON encoding of Secrets.
+func (s Secrets) JSON() []byte {
 	b, _ := json.MarshalIndent(s, "", "  ")
 	return b
 }
