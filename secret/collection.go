@@ -2,10 +2,18 @@ package secret
 
 import (
 	"bytes"
+	"errors"
 	"slices"
 	"time"
 
 	"encoding/gob"
+)
+
+var (
+	// ErrSecretNotFound is returned when a secret cannot be found.
+	ErrSecretNotFound = errors.New("a secret with that identifier cannot be found")
+	// ErrSecretAlreadyExists is returned when a secret already exists.
+	ErrSecretAlreadyExists = errors.New("a secret with that ID or name already exists")
 )
 
 // Collection represents a collection of secrets.

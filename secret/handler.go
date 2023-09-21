@@ -2,6 +2,7 @@ package secret
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/KarlGW/secman/internal/gob"
@@ -14,10 +15,10 @@ var (
 	ErrProfileID = errors.New("a profile ID must be provided")
 	// ErrStorage is returned when no storage is provided.
 	ErrStorage = errors.New("a storage path must be provided when using default storage")
-	// ErrSecretNotFound is returned when a secret cannot be found.
-	ErrSecretNotFound = errors.New("a secret with that identifier cannot be found")
-	// ErrSecretAlreadyExists is returned when a secret already exists.
-	ErrSecretAlreadyExists = errors.New("a secret with that ID or name already exists")
+	// ErrLoadCollection is returned when a collection load fails.
+	ErrLoadCollection = errors.New("load collection failed")
+	// ErrSaveCollection is returned when a collection save fails.
+	ErrSaveCollection = errors.New("save collection failed")
 )
 
 // Storage is the interface that wraps around methods Save, Load and Updated.
@@ -174,8 +175,13 @@ func (h Handler) GetSecretByID(id string, options ...SecretOption) (Secret, erro
 	return secret, nil
 }
 
-// GetSecretByName retrieves a secret by Name.
-func (h Handler) GetSecretByName(name string) (Secret, error) {
+// ListSecrets lists all secrets.
+func (h Handler) ListSecrets() (Secrets, error) {
+	return Secrets(h.collection.secrets), nil
+}
+
+// SecretByName retrieves a secret by Name.
+func (h Handler) SecretByName(name string) (Secret, error) {
 	secret := h.collection.GetByName(name)
 	if !secret.Valid() {
 		return secret, ErrSecretNotFound
@@ -235,6 +241,7 @@ func (h Handler) UpdateSecretByName(name string, options ...SecretOption) (Secre
 	for _, option := range options {
 		option(&opts)
 	}
+
 	if err := secret.Set(options...); err != nil {
 		return secret, err
 	}
@@ -262,22 +269,36 @@ func (h Handler) DeleteSecretByName(name string) error {
 	return h.Save()
 }
 
+// UpdateKey updates the key on the handler and all all secrets.
+func (h *Handler) UpdateKey(key security.Key) error {
+	for _, secret := range h.collection.secrets {
+		if err := secret.Set(WithKey(key.Value)); err != nil {
+			return err
+		}
+		if err := h.collection.Update(secret); err != nil {
+			return err
+		}
+	}
+	h.key = key
+	return h.Save()
+}
+
 // loadDecryptDecode loads data from storage, decrypts it and finally
 // decodes it.
 func loadDecryptDecode(storage Storage, key []byte) (Collection, error) {
 	var collection Collection
 	b, err := storage.Load()
 	if err != nil {
-		return collection, err
+		return collection, fmt.Errorf("%w: %w", ErrLoadCollection, err)
 	}
 
 	decrypted, err := security.Decrypt(b, key)
 	if err != nil {
-		return collection, err
+		return collection, fmt.Errorf("%w: %w", ErrLoadCollection, err)
 	}
 
 	if err := gob.Decode(decrypted, &collection); err != nil {
-		return collection, err
+		return collection, fmt.Errorf("%w: %w", ErrLoadCollection, err)
 	}
 	return collection, nil
 }
@@ -286,12 +307,12 @@ func loadDecryptDecode(storage Storage, key []byte) (Collection, error) {
 func encodeEncryptSave(storage Storage, collection *Collection, key []byte) error {
 	encoded, err := gob.Encode(collection)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %w", ErrSaveCollection, err)
 	}
 
 	encrypted, err := security.Encrypt(encoded, key)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %w", ErrSaveCollection, err)
 	}
 	return storage.Save(encrypted)
 }
