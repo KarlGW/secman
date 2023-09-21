@@ -286,19 +286,19 @@ func (h *Handler) UpdateKey(key security.Key) error {
 // loadDecryptDecode loads data from storage, decrypts it and finally
 // decodes it.
 func loadDecryptDecode(storage Storage, key []byte) (Collection, error) {
-	var collection Collection
 	b, err := storage.Load()
 	if err != nil {
-		return collection, fmt.Errorf("%w: %w", ErrLoadCollection, err)
+		return Collection{}, fmt.Errorf("%w: %w", ErrLoadCollection, err)
 	}
 
 	decrypted, err := security.Decrypt(b, key)
 	if err != nil {
-		return collection, fmt.Errorf("%w: %w", ErrLoadCollection, err)
+		return Collection{}, fmt.Errorf("%w: %w", ErrLoadCollection, err)
 	}
 
+	var collection Collection
 	if err := gob.Decode(decrypted, &collection); err != nil {
-		return collection, fmt.Errorf("%w: %w", ErrLoadCollection, err)
+		return Collection{}, fmt.Errorf("%w: %w", ErrLoadCollection, err)
 	}
 	return collection, nil
 }
