@@ -179,6 +179,11 @@ func (k *Key) Decode(b []byte) error {
 	return nil
 }
 
+// Valid checks if a key is valid
+func (k Key) Valid() bool {
+	return k.Value != nil
+}
+
 // generateBytes generates a random [n]byte.
 func generateBytes(n int) ([]byte, error) {
 	b := make([]byte, n)
