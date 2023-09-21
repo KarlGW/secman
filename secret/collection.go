@@ -105,26 +105,9 @@ func (c *Collection) Update(secret Secret) error {
 		return ErrSecretNotFound
 	}
 	n := now()
-	s := c.secrets[i]
-
-	if len(secret.DisplayName) > 0 {
-		s.DisplayName = secret.DisplayName
-	}
-
-	if secret.Value != nil {
-		s.Value = secret.Value
-	}
-	if secret.Labels != nil {
-		s.Labels = secret.Labels
-	}
-	if secret.Tags != nil {
-		s.Tags = secret.Tags
-	}
-	s.Type = secret.Type
-	s.Updated = n
-
-	c.secrets[i] = s
 	c.updated = n
+	secret.Updated = n
+	c.secrets[i] = secret
 
 	return nil
 }
