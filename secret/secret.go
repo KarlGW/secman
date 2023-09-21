@@ -150,7 +150,7 @@ func (s *Secret) Decrypt(options ...SecretOption) ([]byte, error) {
 
 	decrypted, err := security.Decrypt(s.Value, s.key)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrSecretEncrypt, err)
+		return nil, fmt.Errorf("%w: %w", ErrSecretDecrypt, err)
 	}
 	return decrypted, nil
 }
