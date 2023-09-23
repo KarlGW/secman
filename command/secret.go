@@ -215,7 +215,7 @@ func SecretUpdate() *cli.Command {
 func SecretDelete() *cli.Command {
 	return &cli.Command{
 		Name:    "delete",
-		Aliases: []string{"remote"},
+		Aliases: []string{"remove"},
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "id",
