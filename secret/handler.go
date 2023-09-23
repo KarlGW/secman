@@ -296,7 +296,7 @@ func loadDecryptDecode(storage Storage, key []byte) (Collection, error) {
 	return collection, nil
 }
 
-// encodeEncryptSave encrypt, encodes and finally saves data to storate.
+// encodeEncryptSave encrypt, encodes and finally saves data to storage.
 func encodeEncryptSave(storage Storage, collection *Collection, key []byte) error {
 	encoded, err := gob.Encode(collection)
 	if err != nil {
