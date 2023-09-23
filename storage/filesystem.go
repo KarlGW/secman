@@ -3,10 +3,9 @@ package storage
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"time"
-
-	"github.com/KarlGW/secman/internal/fs"
 )
 
 var (
@@ -36,7 +35,7 @@ func NewFileSystem(path string, options ...FileSystemOption) FileSystem {
 
 // Save data to the file.
 func (f FileSystem) Save(data []byte) (err error) {
-	file, err := fs.OpenWithCreateIfNotExist(f.path, fs.WithTruncate())
+	file, err := os.OpenFile(f.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrStorageSourceNotFound, err)
 	}
@@ -56,13 +55,13 @@ func (f FileSystem) Save(data []byte) (err error) {
 
 // Load data from the file.
 func (f FileSystem) Load() ([]byte, error) {
-	if _, err := os.Stat(f.path); err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrStorageSourceNotFound, err)
-	}
-
 	b, err := os.ReadFile(f.path)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrStorage, err)
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, fmt.Errorf("%w: %w", ErrStorageSourceNotFound, err)
+		} else {
+			return nil, fmt.Errorf("%w: %w", ErrStorage, err)
+		}
 	}
 
 	return b, nil

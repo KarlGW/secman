@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/KarlGW/secman/internal/fs"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 )
@@ -51,7 +50,7 @@ func (p *profiles) Load(file *os.File) error {
 
 // Save the profiles to file.
 func (p profiles) Save() (err error) {
-	file, err := fs.OpenWithCreateIfNotExist(filepath.Join(p.path, profilesFile))
+	file, err := os.OpenFile(filepath.Join(p.path, profilesFile), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
