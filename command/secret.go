@@ -16,6 +16,7 @@ func Secret() *cli.Command {
 		Name: "secret",
 		Subcommands: []*cli.Command{
 			SecretGet(),
+			SecretList(),
 			SecretCreate(),
 			SecretUpdate(),
 			SecretDelete(),
@@ -67,24 +68,38 @@ func SecretGet() *cli.Command {
 				return err
 			}
 
-			// Handle the secret.
-			if ctx.IsSet("clipboard") {
-				decrypted, err := s.Decrypt()
-				if err != nil {
-					return err
-				}
-				return clipboard.WriteAll(string(decrypted))
-			}
 			if ctx.IsSet("decrypt") {
 				decrypted, err := s.Decrypt()
 				if err != nil {
 					return err
 				}
+				if ctx.IsSet("clipboard") {
+					return clipboard.WriteAll(string(decrypted))
+				}
 				output.Println(string(decrypted))
 				return nil
 			}
-			output.Println(string(s.JSON()))
 
+			output.Println(string(s.JSON()))
+			return nil
+		},
+	}
+}
+
+// SecretList is a subcommand for listing secrets.
+func SecretList() *cli.Command {
+	return &cli.Command{
+		Name: "list",
+		Action: func(ctx *cli.Context) error {
+			handler, err := handler(ctx)
+			if err != nil {
+				return err
+			}
+			secrets, err := handler.ListSecrets()
+			if err != nil {
+				return err
+			}
+			output.Println(string(secrets.JSON()))
 			return nil
 		},
 	}
