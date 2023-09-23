@@ -39,7 +39,6 @@ type Handler struct {
 	secondaryStorage Storage
 	storageKey       security.Key
 	key              security.Key
-	decrypt          bool
 }
 
 // HandlerOptions contains options for a Handler.
