@@ -155,24 +155,13 @@ func (h *Handler) Sync() error {
 }
 
 // GetSecretByID retrieves a secret by ID.
-func (h Handler) GetSecretByID(id string, options ...SecretOption) (Secret, error) {
-	opts := SecretOptions{}
-	for _, option := range options {
-		option(&opts)
-	}
-
+func (h Handler) GetSecretByID(id string) (Secret, error) {
 	secret := h.collection.GetByID(id)
 	if !secret.Valid() {
 		return secret, ErrSecretNotFound
 	}
-
-	secret.key = h.key.Value
-	if opts.decrypt {
-		decrypted, err := secret.Decrypt()
-		if err != nil {
-			return secret, err
-		}
-		secret.Value = []byte(decrypted)
+	if secret.key == nil {
+		secret.key = h.key.Value
 	}
 	return secret, nil
 }
@@ -183,7 +172,9 @@ func (h Handler) GetSecretByName(name string) (Secret, error) {
 	if !secret.Valid() {
 		return secret, ErrSecretNotFound
 	}
-	secret.key = h.key.Value
+	if secret.key == nil {
+		secret.key = h.key.Value
+	}
 	return secret, nil
 }
 
