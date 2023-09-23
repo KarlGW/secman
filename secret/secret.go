@@ -43,7 +43,7 @@ func (t Type) String() string {
 	return ""
 }
 
-// MarshalJSON marshals the Type to it's string representation
+// MarshalJSON marshals the Type to its string representation
 // for JSON.
 func (t Type) MarshalJSON() ([]byte, error) {
 	return []byte("\"" + t.String() + "\""), nil
