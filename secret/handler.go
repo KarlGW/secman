@@ -19,6 +19,8 @@ var (
 	ErrLoadCollection = errors.New("load collection failed")
 	// ErrSaveCollection is returned when a collection save fails.
 	ErrSaveCollection = errors.New("save collection failed")
+	// ErrSecretNotFound is returned when a secret cannot be found.
+	ErrSecretNotFound = errors.New("a secret with that identifier cannot be found")
 )
 
 // Storage is the interface that wraps around methods Save, Load and Updated.
@@ -175,19 +177,19 @@ func (h Handler) GetSecretByID(id string, options ...SecretOption) (Secret, erro
 	return secret, nil
 }
 
-// ListSecrets lists all secrets.
-func (h Handler) ListSecrets() (Secrets, error) {
-	return Secrets(h.collection.secrets), nil
-}
-
-// SecretByName retrieves a secret by Name.
-func (h Handler) SecretByName(name string) (Secret, error) {
+// GetSecretByName retrieves a secret by Name.
+func (h Handler) GetSecretByName(name string) (Secret, error) {
 	secret := h.collection.GetByName(name)
 	if !secret.Valid() {
 		return secret, ErrSecretNotFound
 	}
 	secret.key = h.key.Value
 	return secret, nil
+}
+
+// ListSecrets lists all secrets.
+func (h Handler) ListSecrets() (Secrets, error) {
+	return Secrets(h.collection.secrets), nil
 }
 
 // AddSecret adds a new secret to the collection.
@@ -213,18 +215,10 @@ func (h Handler) UpdateSecretByID(id string, options ...SecretOption) (Secret, e
 	if !secret.Valid() {
 		return secret, ErrSecretNotFound
 	}
-	secret.key = h.key.Value
 
-	opts := SecretOptions{}
-	for _, option := range options {
-		option(&opts)
-	}
-
-	if err := secret.Set(options...); err != nil {
-		return secret, err
-	}
-	if err := h.collection.Update(secret); err != nil {
-		return secret, err
+	secret, err := h.updateSecret(secret, options...)
+	if err != nil {
+		return Secret{}, err
 	}
 
 	return secret, h.Save()
@@ -234,23 +228,34 @@ func (h Handler) UpdateSecretByID(id string, options ...SecretOption) (Secret, e
 func (h Handler) UpdateSecretByName(name string, options ...SecretOption) (Secret, error) {
 	secret := h.collection.GetByName(name)
 	if !secret.Valid() {
-		return secret, ErrSecretNotFound
+		return Secret{}, ErrSecretNotFound
 	}
 
-	opts := SecretOptions{}
-	for _, option := range options {
-		option(&opts)
-	}
-
-	if err := secret.Set(options...); err != nil {
-		return secret, err
-	}
-
-	if err := h.collection.Update(secret); err != nil {
-		return secret, err
+	secret, err := h.updateSecret(secret, options...)
+	if err != nil {
+		return Secret{}, err
 	}
 
 	return secret, h.Save()
+}
+
+// updateSecret updates the secret with the provided options.
+func (h Handler) updateSecret(secret Secret, options ...SecretOption) (Secret, error) {
+	if secret.key == nil {
+		// If the collection and secret is newly loaded, the
+		// key will not be set. Set the one configured on the
+		// handler.
+		secret.key = h.key.Value
+	}
+	if err := secret.Set(options...); err != nil {
+		return Secret{}, err
+	}
+
+	if err := h.collection.Update(secret); err != nil {
+		return Secret{}, err
+	}
+
+	return secret, nil
 }
 
 // DeleteSecretByID deletes a secret by ID.
@@ -272,10 +277,8 @@ func (h Handler) DeleteSecretByName(name string) error {
 // UpdateKey updates the key on the handler and all all secrets.
 func (h *Handler) UpdateKey(key security.Key) error {
 	for _, secret := range h.collection.secrets {
-		if err := secret.Set(WithKey(key.Value)); err != nil {
-			return err
-		}
-		if err := h.collection.Update(secret); err != nil {
+		_, err := h.updateSecret(secret, WithKey(key.Value))
+		if err != nil {
 			return err
 		}
 	}
