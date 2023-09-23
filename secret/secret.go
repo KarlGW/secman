@@ -49,7 +49,7 @@ func (t Type) MarshalJSON() ([]byte, error) {
 	return []byte("\"" + t.String() + "\""), nil
 }
 
-// UnmarhsalJSON unmarshals the Type to it's Type (uint8)
+// UnmarhsalJSON unmarshals the Type to its Type (uint8)
 // representaion.
 func (t *Type) UnmarhsalJSON(data []byte) error {
 	i, err := strconv.ParseUint("", 10, 8)
@@ -71,7 +71,7 @@ const (
 	TypeFile
 )
 
-// Secret represents a secret and it's data.
+// Secret represents a secret and its data.
 type Secret struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
