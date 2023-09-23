@@ -50,7 +50,7 @@ func (t Type) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarhsalJSON unmarshals the Type to its Type (uint8)
-// representaion.
+// representation.
 func (t *Type) UnmarhsalJSON(data []byte) error {
 	i, err := strconv.ParseUint("", 10, 8)
 	if err != nil {
