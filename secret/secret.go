@@ -32,6 +32,17 @@ const (
 // Type represents the type of secret.
 type Type uint8
 
+const (
+	// TypeGeneric represents a generic secret.
+	TypeGeneric Type = iota
+	// TypeCredential represents a credential secret.
+	TypeCredential
+	// TypeNote represents a secret note.
+	TypeNote
+	// TypeFile represents a secret file.
+	TypeFile
+)
+
 // String returns the string representation of a secret type.
 func (t Type) String() string {
 	switch t {
@@ -63,17 +74,6 @@ func (t *Type) UnmarhsalJSON(data []byte) error {
 	*t = Type(i)
 	return nil
 }
-
-const (
-	// TypeGeneric represents a generic secret.
-	TypeGeneric Type = iota
-	// TypeCredential represents a credential secret.
-	TypeCredential
-	// TypeNote represents a secret note.
-	TypeNote
-	// TypeFile represents a secret file.
-	TypeFile
-)
 
 // Secret represents a secret and its data.
 type Secret struct {
