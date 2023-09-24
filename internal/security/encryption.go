@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
+	"strconv"
 
 	"golang.org/x/crypto/argon2"
 )
@@ -21,7 +22,14 @@ var (
 	// ErrInvalidKey is returned when the provided key is invalid.
 	ErrInvalidKey = errors.New("invalid key")
 	// ErrInvalidKeyLength is returned when the provided key is not the correct size.
-	ErrInvalidKeyLength = errors.New("invalid key length, must be 32 bytes")
+	ErrInvalidKeyLength = errors.New("invalid key length, must be " + strconv.Itoa(KeyLength) + " bytes")
+)
+
+const (
+	// HashLength is the length of the hash byte slice.
+	HashLength = 16
+	// KeyLength is the length of the key byte slice.
+	KeyLength = 32
 )
 
 var (
@@ -30,7 +38,7 @@ var (
 
 // Encrypt data with 256-bit AES-GCM encryption using the given key.
 func Encrypt(b []byte, key []byte) ([]byte, error) {
-	if len(key) != 32 {
+	if len(key) != KeyLength {
 		return nil, ErrInvalidKeyLength
 	}
 	block, err := aes.NewCipher(key)
@@ -54,7 +62,7 @@ func Encrypt(b []byte, key []byte) ([]byte, error) {
 
 // Decrypt data encrypted with 256-bit AES-GCM encryption using the given key.
 func Decrypt(b []byte, key []byte) ([]byte, error) {
-	if len(key) != 32 {
+	if len(key) != KeyLength {
 		return nil, ErrInvalidKeyLength
 	}
 
@@ -91,13 +99,13 @@ func NewKey() (Key, error) {
 	if err != nil {
 		return Key{}, err
 	}
-	b, err := generateBytes(32)
+	b, err := generateBytes(KeyLength)
 	if err != nil {
 		return Key{}, err
 	}
 
 	return Key{
-		Value: idKey(b, salt, 32),
+		Value: idKey(b, salt, KeyLength),
 		Salt:  salt,
 	}, nil
 }
@@ -105,13 +113,13 @@ func NewKey() (Key, error) {
 // NewKeyFromPassword creates a new key from the provided password
 // using argon2id.
 func NewKeyFromPassword(password []byte) (Key, error) {
-	salt, err := generateBytes(16)
+	salt, err := generateBytes(HashLength)
 	if err != nil {
 		return Key{}, err
 	}
 
 	return Key{
-		Value: idKey(password, salt, 32),
+		Value: idKey(password, salt, KeyLength),
 		Salt:  salt,
 	}, nil
 }
@@ -119,7 +127,7 @@ func NewKeyFromPassword(password []byte) (Key, error) {
 // ComparePasswordAndKey compares the provided password with
 // the provided key.
 func ComparePasswordAndKey(password []byte, key Key) bool {
-	hash := idKey(password, key.Salt, 32)
+	hash := idKey(password, key.Salt, KeyLength)
 	if len(hash) != len(key.Value) {
 		return false
 	}
@@ -169,6 +177,11 @@ func (k *Key) Decode(b []byte) error {
 	k.Value = hash[:n]
 
 	return nil
+}
+
+// Valid checks if a key is valid
+func (k Key) Valid() bool {
+	return k.Value != nil
 }
 
 // generateBytes generates a random [n]byte.

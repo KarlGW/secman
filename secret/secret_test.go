@@ -1,4 +1,4 @@
-package secman
+package secret
 
 import (
 	"testing"
@@ -19,6 +19,7 @@ func TestNewSecret(t *testing.T) {
 		}
 		want      Secret
 		wantValue string
+		wantErr   error
 	}{
 		{
 			name: "New Secret",
@@ -35,6 +36,7 @@ func TestNewSecret(t *testing.T) {
 			want: Secret{
 				ID:      "aaaa",
 				Name:    "secret",
+				Type:    TypeGeneric,
 				Created: _testCreated,
 			},
 			wantValue: _testValue,
@@ -51,9 +53,9 @@ func TestNewSecret(t *testing.T) {
 				return "aaaa"
 			}
 
-			got := NewSecret(test.input.name, test.input.value, test.input.key, test.input.options...)
+			got, gotErr := NewSecret(test.input.name, test.input.value, test.input.key, test.input.options...)
 
-			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(Secret{}, "Value")); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(Secret{}, "Value"), cmpopts.IgnoreUnexported(Secret{})); diff != "" {
 				t.Errorf("NewSecret() = unexpected result (-want +got)\n%s\n", diff)
 			}
 
@@ -62,6 +64,9 @@ func TestNewSecret(t *testing.T) {
 				t.Errorf("NewSecret() = unexpected value, want: %s, got: %s\n", test.wantValue, string(gotValue))
 			}
 
+			if diff := cmp.Diff(test.wantErr, gotErr); diff != "" {
+				t.Errorf("NewSecret() = unexpected error (-want +got)\n%s\n", diff)
+			}
 		})
 	}
 }

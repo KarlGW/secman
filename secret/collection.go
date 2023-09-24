@@ -1,10 +1,17 @@
-package secman
+package secret
 
 import (
 	"bytes"
+	"errors"
+	"slices"
 	"time"
 
 	"encoding/gob"
+)
+
+var (
+	// ErrSecretAlreadyExists is returned when a secret already exists.
+	ErrSecretAlreadyExists = errors.New("a secret with that ID or name already exists")
 )
 
 // Collection represents a collection of secrets.
@@ -75,9 +82,9 @@ func (c Collection) GetByName(name string) Secret {
 
 // Add a secret to the collection. Returns true if secret was added,
 // false if not (secret already exists).
-func (c *Collection) Add(secret Secret) bool {
+func (c *Collection) Add(secret Secret) error {
 	if c.GetByID(secret.ID).Valid() || c.GetByName(secret.Name).Valid() {
-		return false
+		return ErrSecretAlreadyExists
 	}
 
 	// If maps are not set, initialize them.
@@ -94,82 +101,65 @@ func (c *Collection) Add(secret Secret) bool {
 	c.ids[secret.ID] = index
 	c.names[secret.Name] = index
 	c.updated = now()
-	return true
+	return nil
 }
 
 // Update a secret.
-func (c *Collection) Update(secret Secret) bool {
+func (c *Collection) Update(secret Secret) error {
 	i, ok := c.ids[secret.ID]
 	if !ok {
-		return false
+		return ErrSecretNotFound
 	}
 	n := now()
-	s := c.secrets[i]
-
-	if len(secret.DisplayName) > 0 {
-		s.DisplayName = secret.DisplayName
-	}
-
-	if secret.Value != nil {
-		s.Value = secret.Value
-	}
-	if secret.Labels != nil {
-		s.Labels = secret.Labels
-	}
-	if secret.Tags != nil {
-		s.Tags = secret.Tags
-	}
-	s.Type = secret.Type
-	s.Updated = n
-
-	c.secrets[i] = s
 	c.updated = n
+	secret.Updated = n
+	c.secrets[i] = secret
 
-	return true
+	return nil
 }
 
 // Remove a secret by the provided ID.
-func (c *Collection) Remove(id string) bool {
+func (c *Collection) Remove(id string) error {
 	return c.RemoveByID(id)
 }
 
 // RemoveByID removes a secret by the provided ID.
-func (c *Collection) RemoveByID(id string) bool {
+func (c *Collection) RemoveByID(id string) error {
 	if c.ids == nil {
-		return false
+		return ErrSecretNotFound
 	}
 
 	i, ok := c.ids[id]
 	if !ok {
-		return false
+		return ErrSecretNotFound
 	}
 
 	c.remove(i)
 	c.updated = now()
 
-	return true
+	return nil
 }
 
 // RemoveByID removes a secret by the provided name.
-func (c *Collection) RemoveByName(name string) bool {
+func (c *Collection) RemoveByName(name string) error {
 	if c.names == nil {
-		return false
+		return ErrSecretNotFound
 	}
 
 	i, ok := c.names[name]
 	if !ok {
-		return false
+		return ErrSecretNotFound
 	}
 
 	c.remove(i)
 	c.updated = now()
 
-	return true
+	return nil
 }
 
 // remove the secret by index and update the index maps.
 func (c *Collection) remove(i int) {
-	c.secrets = append(c.secrets[:i], c.secrets[i+1:]...)
+	c.secrets = slices.Delete(c.secrets, i, i+1)
 	for k, v := range c.ids {
 		if v == i {
 			delete(c.ids, k)

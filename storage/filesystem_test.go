@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-func TestNewFile(t *testing.T) {
+func TestNewFileSystem(t *testing.T) {
 	var tests = []struct {
 		name  string
 		input struct {
@@ -43,7 +43,7 @@ func TestNewFile(t *testing.T) {
 	}
 }
 
-func TestFile_Save(t *testing.T) {
+func TestFileSystem_Save(t *testing.T) {
 	var tests = []struct {
 		name  string
 		input struct {
@@ -63,18 +63,34 @@ func TestFile_Save(t *testing.T) {
 				dirShouldExist  bool
 				fileShouldExist bool
 			}{
-				path: filepath.Join("../", _testRoot, _testDir, _testFile),
-				data: []byte(`test`),
+				path:            filepath.Join("../", _testRoot, _testDir, _testFile),
+				data:            []byte(`test`),
+				dirShouldExist:  true,
+				fileShouldExist: true,
 			},
 			want:    []byte(`test`),
 			wantErr: nil,
+		},
+		{
+			name: "Save contents - file does not exist",
+			input: struct {
+				path            string
+				data            []byte
+				dirShouldExist  bool
+				fileShouldExist bool
+			}{
+				path: filepath.Join("../", _testRoot, _testDir, _testFile),
+				data: []byte(`test`),
+			},
+			want:    nil,
+			wantErr: ErrStorageSourceNotFound,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			setupFileTest(test.input.dirShouldExist, test.input.fileShouldExist)
-			defer cleanupFileTest(test.input.dirShouldExist, test.input.fileShouldExist)
+			setupFileSystemTest(test.input.dirShouldExist, test.input.fileShouldExist)
+			defer cleanupFileSystemTest(test.input.dirShouldExist, test.input.fileShouldExist)
 			stg := FileSystem{
 				path: test.input.path,
 			}
@@ -98,7 +114,7 @@ func TestFile_Save(t *testing.T) {
 	}
 }
 
-func setupFileTest(dirShouldExist, fileShouldExist bool) {
+func setupFileSystemTest(dirShouldExist, fileShouldExist bool) {
 	if dirShouldExist {
 		_ = os.MkdirAll(filepath.Join("../", _testRoot, _testDir), 0700)
 	}
@@ -108,7 +124,7 @@ func setupFileTest(dirShouldExist, fileShouldExist bool) {
 	}
 }
 
-func cleanupFileTest(dirShouldExist, fileShouldExist bool) {
+func cleanupFileSystemTest(dirShouldExist, fileShouldExist bool) {
 	os.Remove(filepath.Join("../", _testFullPath))
 	os.RemoveAll(filepath.Join("../", _testRoot, _testDir))
 }
