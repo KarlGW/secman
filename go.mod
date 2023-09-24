@@ -1,6 +1,8 @@
 module github.com/KarlGW/secman
 
-go 1.21.0
+go 1.21
+
+toolchain go1.21.1
 
 require (
 	github.com/atotto/clipboard v0.1.4
