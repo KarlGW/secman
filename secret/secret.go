@@ -12,12 +12,16 @@ import (
 )
 
 var (
-	ErrInvalidKey       = security.ErrInvalidKey
+	// ErrInvalidKey is returned when the provided key is invalid.
+	ErrInvalidKey = security.ErrInvalidKey
+	// ErrInvalidKeyLength is returned when the provided key is not the correct size.
 	ErrInvalidKeyLength = security.ErrInvalidKeyLength
 )
 
 var (
+	// ErrSecretEncrypt is returned when an error is encountered when encrypting a secret.
 	ErrSecretEncrypt = errors.New("encrypting secret")
+	// ErrSecretDecrypt is returned when an error is encountered when decrypting a secret.
 	ErrSecretDecrypt = errors.New("decrypting secret")
 )
 
@@ -84,7 +88,7 @@ type Secret struct {
 	Created time.Time         `json:"created,omitempty"`
 	Updated time.Time         `json:"updated,omitempty"`
 	// Key for encrypting the secret. The key is not persisted
-	// or transmited.
+	// or transmitted.
 	key []byte `json:"-"`
 }
 
@@ -97,7 +101,6 @@ type SecretOptions struct {
 	Tags        map[string]string
 	Updated     time.Time
 	key         []byte
-	decrypt     bool
 }
 
 // SecretOption is a function to set SecretOptions.
@@ -234,13 +237,6 @@ func WithValue(value []byte) SecretOption {
 func WithKey(key []byte) SecretOption {
 	return func(o *SecretOptions) {
 		o.key = key
-	}
-}
-
-// WithDecrypt decrypts secret before returning it.
-func WithDecrypt() SecretOption {
-	return func(o *SecretOptions) {
-		o.decrypt = true
 	}
 }
 
