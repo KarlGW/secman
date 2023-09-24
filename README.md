@@ -83,16 +83,16 @@ secman secret create --name <name> --clipboard
 
 ### Retreive a secret
 
-**Show details of a secret**
-
-```sh
-secman secret get --name <name>
-```
-
 **List details of all secrets**
 
 ```sh
 secman secret list
+```
+
+**Show details of a secret**
+
+```sh
+secman secret get --name <name>
 ```
 
 **Get the value of the secret**
@@ -113,7 +113,7 @@ secman secret get --name <name> --decrypt --clipboard
 **Update value from `stdin`**
 
 ```sh
-secman secret update --name <name> --value <new-value>
+secman secret update --name <name> --value <new-secret-value>
 ```
 
 **Update falue from clipboard**
