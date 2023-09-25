@@ -5,6 +5,7 @@ import (
 
 	"github.com/KarlGW/secman/command"
 	"github.com/KarlGW/secman/output"
+	"github.com/KarlGW/secman/version"
 	"github.com/urfave/cli/v2"
 )
 
@@ -15,11 +16,14 @@ const (
 // CLI is the entrypoint for the program.
 func CLI(args []string) int {
 	app := &cli.App{
-		Name:  name,
-		Usage: "",
+		Name:                 name,
+		Usage:                "",
+		Version:              version.Version(),
+		EnableBashCompletion: true,
 		Commands: []*cli.Command{
 			command.Secret(),
 			command.Profile(),
+			command.Completion(),
 		},
 	}
 
