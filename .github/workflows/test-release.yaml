@@ -1,0 +1,35 @@
+name: Test and release
+on:
+  push:
+    branches:
+    - dev
+    - dev/*
+    - feature/*
+    - fix/*
+    - refactor/*
+    tags:
+    - 'v[0-9]+.[0-9]+.[0-9]+'
+    paths-ignore:
+    - '**.md'
+  pull_request:
+    branches:
+    - main
+    paths-ignore:
+    - '**.md'
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ 'ubuntu-latest', 'windows-latest', 'macos-latest' ]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '>=1.21.1'
+    
+    - name: Run tests
+      run: go vet ./... && go test ./... -v
