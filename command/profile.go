@@ -34,7 +34,7 @@ func ProfileUpdate() *cli.Command {
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:    "password",
-				Usage:   "Set passwprd for secret decryption key generation",
+				Usage:   "Set passwprd for secret encryption key generation",
 				Aliases: []string{"p"},
 			},
 		},
