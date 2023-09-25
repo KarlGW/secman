@@ -9,6 +9,7 @@ import (
 	"os/user"
 	"path/filepath"
 
+	"github.com/KarlGW/secman/internal/filesystem"
 	"github.com/KarlGW/secman/internal/security"
 	"github.com/zalando/go-keyring"
 	"gopkg.in/yaml.v3"
@@ -51,12 +52,12 @@ func Configure(options ...Option) (cfg Configuration, err error) {
 		option(&cfg)
 	}
 
-	configFile, err := os.OpenFile(filepath.Join(cfg.path, configFile), os.O_CREATE|os.O_RDWR, 0600)
+	configFile, err := filesystem.OpenFile(filepath.Join(cfg.path, configFile), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return
 	}
 
-	profilesFile, err := os.OpenFile(filepath.Join(cfg.path, profilesFile), os.O_CREATE|os.O_RDWR, 0600)
+	profilesFile, err := filesystem.OpenFile(filepath.Join(cfg.path, profilesFile), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return
 	}
@@ -115,7 +116,7 @@ func (c *Configuration) Load(file *os.File) error {
 
 // Save the Configuration to file.
 func (c Configuration) Save() (err error) {
-	file, err := os.OpenFile(filepath.Join(c.path, configFile), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0600)
+	file, err := filesystem.OpenFile(filepath.Join(c.path, configFile), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}

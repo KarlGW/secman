@@ -6,6 +6,8 @@ import (
 	"io/fs"
 	"os"
 	"time"
+
+	"github.com/KarlGW/secman/internal/filesystem"
 )
 
 var (
@@ -35,7 +37,7 @@ func NewFileSystem(path string, options ...FileSystemOption) FileSystem {
 
 // Save data to the file.
 func (f FileSystem) Save(data []byte) (err error) {
-	file, err := os.OpenFile(f.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	file, err := filesystem.OpenFile(f.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrStorageSourceNotFound, err)
 	}

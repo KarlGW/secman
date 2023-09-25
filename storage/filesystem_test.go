@@ -82,8 +82,8 @@ func TestFileSystem_Save(t *testing.T) {
 				path: filepath.Join("../", _testRoot, _testDir, _testFile),
 				data: []byte(`test`),
 			},
-			want:    nil,
-			wantErr: ErrStorageSourceNotFound,
+			want:    []byte(`test`),
+			wantErr: nil,
 		},
 	}
 

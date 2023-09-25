@@ -41,6 +41,9 @@ func TestCollection_Encode_Decode(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			encoded, gotErr := gob.Encode(test.input)
+			if gotErr != nil {
+				t.Errorf("unexpected error in test, could not encode to gob")
+			}
 			got := Collection{}
 			gotErr = gob.Decode(encoded, &got)
 
