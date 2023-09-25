@@ -8,6 +8,7 @@ the secrets safe.
 
 * [Introduction](#introduction)
 * [Install](#install)
+  * [Autocompletion](#autocompletion)
 * [Usage](#usage)
 
 
@@ -49,6 +50,58 @@ cd secman
 OS=<os> # darwin, linux or windows.
 ARCH=<arch> # amd64 or arm64.
 GOOS=$OS GOARCH=$ARCH go build -ldflags="-w -s" -trimpath -o build/secman cmd/secman/main.go
+```
+
+### Autocompletion
+
+To enable auto/tab completion for `secman` follow the steps below depending on shell.
+
+**Bash**
+
+Current session:
+
+```sh
+PROG=secman source <(secman completion bash)
+```
+
+For all sessions:
+
+```sh
+echo -e "\n# secman\nPROG=secman source <(secman completion bash)" >> ~/.bashrc
+```
+
+**Zsh**
+
+Current session:
+
+```sh
+PROG=secman source <(secman completion zsh)
+```
+
+For all sessions:
+
+```sh
+echo -e "\n# secman\nPROG=secman source <(secman completion zsh)" >> ~/.zshrc
+```
+
+**PowerShell**
+
+First create the autocompletion script:
+
+```powershell
+./secman completion powershell >> "$(Split-Path $PROFILE)/secman.ps1"
+```
+
+Current session:
+
+```sh
+& "$(Split-Path $PROFILE)/secman.ps1"
+```
+
+For all sessions:
+
+```sh
+"& $(Split-Path $PROFILE)/secman.ps1" >> $PROFILE
 ```
 
 ## Usage
