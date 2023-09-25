@@ -13,7 +13,8 @@ import (
 // get, create, update and delete secrets.
 func Secret() *cli.Command {
 	return &cli.Command{
-		Name: "secret",
+		Name:  "secret",
+		Usage: "Manage secrets",
 		Subcommands: []*cli.Command{
 			SecretGet(),
 			SecretList(),
