@@ -17,7 +17,7 @@ const (
 func CLI(args []string) int {
 	app := &cli.App{
 		Name:                 name,
-		Usage:                "",
+		Usage:                "Tool for managing secrets",
 		Version:              version.Version(),
 		EnableBashCompletion: true,
 		Commands: []*cli.Command{

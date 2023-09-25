@@ -9,7 +9,8 @@ import (
 // profiles.
 func Profile() *cli.Command {
 	return &cli.Command{
-		Name: "profile",
+		Name:  "profile",
+		Usage: "Manage profile",
 		Subcommands: []*cli.Command{
 			ProfileUpdate(),
 		},
@@ -28,10 +29,12 @@ func ProfileGet() *cli.Command {
 func ProfileUpdate() *cli.Command {
 	return &cli.Command{
 		Name:    "update",
+		Usage:   "Update profile",
 		Aliases: []string{"set"},
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:    "password",
+				Usage:   "Set passwprd for secret encryption key generation",
 				Aliases: []string{"p"},
 			},
 		},

@@ -13,7 +13,8 @@ import (
 // get, create, update and delete secrets.
 func Secret() *cli.Command {
 	return &cli.Command{
-		Name: "secret",
+		Name:  "secret",
+		Usage: "Manage secrets",
 		Subcommands: []*cli.Command{
 			SecretGet(),
 			SecretList(),
@@ -37,25 +38,28 @@ func Secret() *cli.Command {
 func SecretGet() *cli.Command {
 	return &cli.Command{
 		Name:    "get",
+		Usage:   "Get a secret",
 		Aliases: []string{"show"},
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "id",
-				Usage: "id of secret to retrieve",
+				Name:    "id",
+				Aliases: []string{"i"},
+				Usage:   "ID of secret to retrieve",
 			},
 			&cli.StringFlag{
-				Name:  "name",
-				Usage: "name of secret to retrieve",
+				Name:    "name",
+				Aliases: []string{"n"},
+				Usage:   "Name of secret to retrieve",
 			},
 			&cli.BoolFlag{
 				Name:    "decrypt",
 				Aliases: []string{"d"},
-				Usage:   "decrypt the value of the secret",
+				Usage:   "Decrypt the value of the secret",
 			},
 			&cli.BoolFlag{
 				Aliases: []string{"c"},
 				Name:    "clipboard",
-				Usage:   "copy the secret value to the clipboard",
+				Usage:   "Copy the secret value to the clipboard",
 			},
 		},
 		Action: func(ctx *cli.Context) error {
@@ -89,7 +93,8 @@ func SecretGet() *cli.Command {
 // SecretList is a subcommand for listing secrets.
 func SecretList() *cli.Command {
 	return &cli.Command{
-		Name: "list",
+		Name:  "list",
+		Usage: "List secrets",
 		Action: func(ctx *cli.Context) error {
 			handler, err := handler(ctx)
 			if err != nil {
@@ -109,19 +114,23 @@ func SecretList() *cli.Command {
 func SecretCreate() *cli.Command {
 	return &cli.Command{
 		Name:    "create",
+		Usage:   "Create a secret",
 		Aliases: []string{"add"},
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "name",
-				Usage: "name of secret to create",
+				Name:    "name",
+				Aliases: []string{"n"},
+				Usage:   "Name of secret to create",
 			},
 			&cli.StringFlag{
-				Name:  "value",
-				Usage: "value of the secret",
+				Name:    "value",
+				Aliases: []string{"v"},
+				Usage:   "Value of the secret",
 			},
 			&cli.BoolFlag{
-				Name:  "clipboard",
-				Usage: "get the secret value from clipboard",
+				Name:    "clipboard",
+				Aliases: []string{"c"},
+				Usage:   "Get the secret value from clipboard",
 			},
 		},
 		Action: func(ctx *cli.Context) error {
@@ -156,23 +165,28 @@ func SecretCreate() *cli.Command {
 func SecretUpdate() *cli.Command {
 	return &cli.Command{
 		Name:    "update",
+		Usage:   "Update a secret",
 		Aliases: []string{"set"},
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "id",
-				Usage: "id of secret to retrieve",
+				Name:    "id",
+				Aliases: []string{"i"},
+				Usage:   "ID of secret to retrieve",
 			},
 			&cli.StringFlag{
-				Name:  "name",
-				Usage: "name of secret to retrieve",
+				Name:    "name",
+				Aliases: []string{"n"},
+				Usage:   "Name of secret to retrieve",
 			},
 			&cli.StringFlag{
-				Name:  "value",
-				Usage: "value of the secret",
+				Name:    "value",
+				Aliases: []string{"v"},
+				Usage:   "Value of the secret",
 			},
 			&cli.BoolFlag{
-				Name:  "clipboard",
-				Usage: "get the secret value from clipboard",
+				Name:    "clipboard",
+				Aliases: []string{"c"},
+				Usage:   "Get the secret value from clipboard",
 			},
 		},
 		Action: func(ctx *cli.Context) error {
@@ -215,15 +229,18 @@ func SecretUpdate() *cli.Command {
 func SecretDelete() *cli.Command {
 	return &cli.Command{
 		Name:    "delete",
+		Usage:   "Delete a secret",
 		Aliases: []string{"remove"},
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "id",
-				Usage: "id of secret to delete",
+				Name:    "id",
+				Aliases: []string{"i"},
+				Usage:   "ID of secret to delete",
 			},
 			&cli.StringFlag{
-				Name:  "name",
-				Usage: "name of secret to delete",
+				Name:    "name",
+				Aliases: []string{"n"},
+				Usage:   "Name of secret to delete",
 			},
 		},
 		Action: func(ctx *cli.Context) error {
