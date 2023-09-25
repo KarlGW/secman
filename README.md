@@ -31,17 +31,35 @@ in the hands of the user.
 
 ## Install
 
-Install scripts for the various OS are underway and worked upon. For now either use `go install` or build it from source.
+Install scripts for the various OS are underway and worked upon. For now either:
 
-**Go**
+* [Manual install](#manual-install) (download from [releases](https://github.com/KarlGW/secman/releases))
+* [Use `go install`](#use-go-install)
+* [Build from source](#build-from-source)
 
-To install with the **Go** toolchain:
+### Manual install
+
+1. Go to [releases](https://github.com/KarlGW/secman/releases).
+2. Download the archive that matches the systems operating system and architecture.
+3. Extract the binary and move it to an appropriate target destination (preferably in `$PATH`):
+```sh
+# tar.gz
+tar -xvf secman-<version>-<os>-<arch>.tar.gz && mv secman /path/to/target/directory
+# zip
+unzip secman-<version>-<os>-<arch>.zip && mv secman /path/to/target/directory
+```
+
+**Note**: The archive file contains the binary `secman` together with `README.md`, `LICENSE` and `LICENSE-THIRD-PARTY.md`.
+
+### Use `go install`
 
 ```sh
 go install github.com/KarlGW/secman
 ```
 
-**Build from source**
+### Build from source
+
+Building from source requires Go v1.21.1 installed on the system.
 
 ```sh
 git clone github.com/KarlGW/secman
