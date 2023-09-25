@@ -187,7 +187,7 @@ secman secret get --name <name> --decrypt --clipboard
 secman secret update --name <name> --value <new-secret-value>
 ```
 
-**Update falue from clipboard**
+**Update value from clipboard**
 
 ```sh
 secman secret update --name <name> --clipboard
