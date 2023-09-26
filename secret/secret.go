@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/KarlGW/secman/internal/security"
@@ -248,4 +250,27 @@ var now = func() time.Time {
 // newUUID creates a new UUID as a string.
 var newUUID = func() string {
 	return uuid.NewString()
+}
+
+const (
+	charset        = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUWXYZ"
+	specialCharset = "_-!?=()&%"
+)
+
+// Generate a random string of the specified amount of characters,
+// and if special characters should be included.
+func Generate(length int, specialChars bool) string {
+	var builder strings.Builder
+	builder.Grow(length)
+
+	chars := charset
+	if specialChars {
+		chars += specialCharset
+	}
+
+	for i := 0; i < length; i++ {
+		builder.WriteByte(chars[rand.Intn(len(chars))])
+	}
+
+	return builder.String()
 }

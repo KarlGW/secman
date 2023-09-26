@@ -8,8 +8,9 @@ import (
 
 func Completion() *cli.Command {
 	return &cli.Command{
-		Name:  "completion",
-		Usage: "Generate completion script",
+		Name:     "completion",
+		Category: "Subcommands",
+		Usage:    "Generate completion script",
 		Subcommands: []*cli.Command{
 			{
 				Name:  "bash",
