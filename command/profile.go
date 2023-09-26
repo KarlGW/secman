@@ -9,8 +9,9 @@ import (
 // profiles.
 func Profile() *cli.Command {
 	return &cli.Command{
-		Name:  "profile",
-		Usage: "Manage profile",
+		Name:     "profile",
+		Usage:    "Manage profile",
+		Category: "Subcommands",
 		Subcommands: []*cli.Command{
 			ProfileUpdate(),
 		},
