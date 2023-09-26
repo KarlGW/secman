@@ -43,7 +43,6 @@ func initHandler(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
 	if len(cfg.StorageKey().Value) != secret.KeyLength {
 		return errors.New("a key must be set for storage")
 	}
