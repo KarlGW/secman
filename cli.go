@@ -22,6 +22,7 @@ func CLI(args []string) int {
 		EnableBashCompletion: true,
 		Commands: []*cli.Command{
 			command.Secret(),
+			command.Generate(),
 			command.Profile(),
 			command.Completion(),
 		},
