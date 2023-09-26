@@ -39,22 +39,23 @@ func configuration(ctx *cli.Context) (config.Configuration, error) {
 // initHandler performs the necessary steps to setup a handler and
 // set it to the provided *cli.Context.
 func initHandler(ctx *cli.Context) error {
-	config, err := configuration(ctx)
+	cfg, err := config.Configure()
 	if err != nil {
 		return err
 	}
-	if len(config.StorageKey().Value) != secret.KeyLength {
+
+	if len(cfg.StorageKey().Value) != secret.KeyLength {
 		return errors.New("a key must be set for storage")
 	}
-	if len(config.Key().Value) != secret.KeyLength {
+	if len(cfg.Key().Value) != secret.KeyLength {
 		return errors.New("a key must be set")
 	}
 
 	handler, err := secret.NewHandler(
-		config.ProfileID,
-		config.StorageKey(),
-		config.Key(),
-		storage.NewFileSystem(config.StoragePath()),
+		cfg.ProfileID,
+		cfg.StorageKey(),
+		cfg.Key(),
+		storage.NewFileSystem(cfg.StoragePath()),
 		secret.WithLoadCollection(),
 	)
 	if err != nil {
