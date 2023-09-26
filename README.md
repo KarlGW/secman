@@ -138,18 +138,33 @@ be used for encrypting the secrets in the collection.
 
 To update the password/key for all current and future secrets, run the command again.
 
-### Adding a secret
-
-**Set value from `stdin`**
+### Generating a secret
 
 ```sh
-secman secret create --name <name> --value <secret-value>
+secman generate
+```
+
+### Adding a secret
+
+**Set value from flag**
+
+```sh
+secman create --name <name> --value <secret-value>
 ```
 
 **Set value from clipboard**
 
 ```sh
-secman secret create --name <name> --clipboard
+secman create --name <name> --clipboard
+```
+
+**Set value from `stdin` pipe**
+
+```sh
+# Provided value
+echo "value" | secman create --name <name>
+# Generate
+secman generate | secman create --name <name>
 ```
 
 ### Retreive a secret
@@ -157,44 +172,53 @@ secman secret create --name <name> --clipboard
 **List details of all secrets**
 
 ```sh
-secman secret list
+secman list
 ```
 
 **Show details of a secret**
 
 ```sh
-secman secret get --name <name>
+secman get --name <name>
 ```
 
 **Get the value of the secret**
 
 ```sh
-secman secret get --name <name> --decrypt
+secman get --name <name> --decrypt
 ```
 
 **Get the value of the secret and set to clipboard**
 
 ```sh
-secman secret get --name <name> --decrypt --clipboard
+secman get --name <name> --decrypt --clipboard
 ```
 (The value will not be shown, it will be available within the OS clipboard ready to be pasted where needed)
 
 ### Update a secret
 
-**Update value from `stdin`**
+**Update value from flag**
 
 ```sh
-secman secret update --name <name> --value <new-secret-value>
+secman update --name <name> --value <new-secret-value>
 ```
 
 **Update value from clipboard**
 
 ```sh
-secman secret update --name <name> --clipboard
+secman update --name <name> --clipboard
+```
+
+**Update value from `stdin` pipe**
+
+```sh
+# Provided value
+echo "value" | secman update --name <name>
+# Generate
+secman generate | secman update --name <name>
 ```
 
 ### Delete a secret
 
 ```sh
-secman secret delete --name <name>
+secman delete --name <name>
 ```
