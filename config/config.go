@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/KarlGW/secman/internal/filesystem"
+	"github.com/KarlGW/secman/internal/gob"
 	"github.com/KarlGW/secman/internal/security"
 	"github.com/zalando/go-keyring"
 	"gopkg.in/yaml.v3"
@@ -149,6 +150,38 @@ func (c Configuration) StorageKey() security.Key {
 // StoragePath returns the storage path of the key file.
 func (c Configuration) StoragePath() string {
 	return c.storagePath
+}
+
+// Export a configuration and profile
+func (c Configuration) Export(dst string, key security.Key) error {
+	exported := export{
+		Version:     exportVersion,
+		KeyringItem: c.keyringItem,
+	}
+
+	b, err := os.ReadFile(filepath.Join(c.path, profilesFile))
+	if err != nil {
+		return err
+	}
+	var p profiles
+	if err := p.FromYAML(b); err != nil {
+		return err
+	}
+	if profile, ok := p.p[c.ProfileID]; !ok {
+		return errors.New("profile not found")
+	} else {
+		exported.Profile = profile
+	}
+
+	b, err = gob.Encode(exported)
+	if err != nil {
+		return err
+	}
+	encrypted, err := security.Encrypt(b, key.Value)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(dst, encrypted, 0600)
 }
 
 // setupProfileAndStoragePath checks profiles for profile by name, and creates it if necessary.
