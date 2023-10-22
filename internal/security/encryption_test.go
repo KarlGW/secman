@@ -50,7 +50,7 @@ func TestEncryptDecrypt(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			enc, gotErr := Encrypt(test.input.b, test.input.encryptKey.Value)
+			enc, _ := Encrypt(test.input.b, test.input.encryptKey.Value)
 			got, gotErr := Decrypt(enc, test.input.decryptKey.Value)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("Encrypt() = unexpected result (-want +got)\n%s\n", diff)
