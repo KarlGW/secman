@@ -42,6 +42,10 @@ func (p *profiles) FromYAML(b []byte) error {
 
 // Load profiles from a yaml file.
 func (p *profiles) Load(file *os.File) error {
+	if p.p == nil {
+		p.p = make(map[string]profile)
+	}
+
 	b, err := io.ReadAll(file)
 	if err != nil {
 		return err
