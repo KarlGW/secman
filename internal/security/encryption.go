@@ -7,6 +7,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
 	"errors"
@@ -122,6 +123,16 @@ func NewKeyFromPassword(password []byte) (Key, error) {
 		Value: idKey(password, salt, KeyLength),
 		Salt:  salt,
 	}, nil
+}
+
+// NewSHA256FromPassword creates a new SHA256 from the provided
+// password.
+func NewSHA256FromPassword(password []byte) ([]byte, error) {
+	h := sha256.New()
+	if _, err := h.Write(password); err != nil {
+		return nil, err
+	}
+	return h.Sum(nil), nil
 }
 
 // ComparePasswordAndKey compares the provided password with
