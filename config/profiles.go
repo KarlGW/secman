@@ -2,9 +2,9 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"os"
-	"path/filepath"
 
 	"github.com/KarlGW/secman/internal/filesystem"
 	"github.com/google/uuid"
@@ -41,7 +41,15 @@ func (p *profiles) FromYAML(b []byte) error {
 }
 
 // Load profiles from a yaml file.
-func (p *profiles) Load(file *os.File) error {
+func (p *profiles) Load() error {
+	if len(p.path) == 0 {
+		return errors.New("profile path empty")
+	}
+	file, err := filesystem.OpenFile(p.path, os.O_CREATE|os.O_RDWR, 0600)
+	if err != nil {
+		return err
+	}
+
 	if p.p == nil {
 		p.p = make(map[string]profile)
 	}
@@ -50,12 +58,15 @@ func (p *profiles) Load(file *os.File) error {
 	if err != nil {
 		return err
 	}
+	if err := file.Close(); err != nil {
+		return err
+	}
 	return p.FromYAML(b)
 }
 
 // Save the profiles to file.
 func (p profiles) Save() (err error) {
-	file, err := filesystem.OpenFile(filepath.Join(p.path, profilesFile), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0600)
+	file, err := filesystem.OpenFile(p.path, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
@@ -69,20 +80,28 @@ func (p profiles) Save() (err error) {
 	return err
 }
 
-// GetByName gets a profile by name.
-func (p profiles) GetByName(name string) profile {
-	for k, v := range p.p {
-		if v.Name == name {
-			return p.p[k]
-		}
-	}
-	return profile{}
+// Get a profile.
+func (p profiles) Get(id string) profile {
+	return p.p[id]
 }
 
-// newProfile creates and returns a new profile.
-func newProfile(name string) profile {
-	return profile{
-		ID:   uuid.New().String(),
+// newProfile creates and adds a new profile.
+func (p *profiles) newProfile(name string) (profile, error) {
+	if p.p == nil {
+		p.p = make(map[string]profile)
+	}
+
+	_profile := profile{
+		ID:   newUUID(),
 		Name: name,
 	}
+	if _, ok := p.p[_profile.ID]; ok {
+		return profile{}, errors.New("a profile with that ID already exists")
+	}
+	p.p[_profile.ID] = _profile
+	return p.p[_profile.ID], nil
+}
+
+var newUUID = func() string {
+	return uuid.New().String()
 }

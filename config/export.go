@@ -18,3 +18,8 @@ type export struct {
 	KeyringItem keyringItem
 	Version     string
 }
+
+// Valid returns true if the exported file is valid.
+func (e export) Valid() bool {
+	return len(e.Profile.ID) > 0 && e.KeyringItem.Valid()
+}

@@ -130,7 +130,11 @@ When using `secman` the key for the secret collection will be generated and set 
 a "master password" must be used to generate the key for the secret.
 
 ```sh
+secmen profile new
 secman profile set --password
+
+# Or set a password when creating the profile.
+secman profile new --password
 ```
 
 This will prompt for a password. This will generate a key and set it in the credential manager, and this key will
