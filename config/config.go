@@ -159,7 +159,7 @@ func (c *Configuration) SetStorageKey(key security.Key) error {
 	if !c.keyringItem.isSet && c.keyringItem.Key.Valid() {
 		c.keyringItem.isSet = true
 	}
-	return c.keyring.Set(application, c.ProfileID, string(c.keyringItem.Encode()))
+	return c.keyring.Set(application, c.profile.ID, string(c.keyringItem.Encode()))
 }
 
 // SetKey sets the key to the configuration.
@@ -168,7 +168,7 @@ func (c *Configuration) SetKey(key security.Key) error {
 	if !c.keyringItem.isSet && c.keyringItem.StorageKey.Valid() {
 		c.keyringItem.isSet = true
 	}
-	return c.keyring.Set(application, c.ProfileID, string(c.keyringItem.Encode()))
+	return c.keyring.Set(application, c.profile.ID, string(c.keyringItem.Encode()))
 }
 
 // Key returns the key.
@@ -191,17 +191,7 @@ func (c Configuration) Export(dst string, key []byte) error {
 	exported := export{
 		Version:     exportVersion,
 		KeyringItem: c.keyringItem,
-	}
-
-	p := profiles{}
-	if err := p.Load(); err != nil {
-		return err
-	}
-
-	if profile, ok := p.p[c.ProfileID]; !ok {
-		return errors.New("profile not found")
-	} else {
-		exported.Profile = profile
+		Profile:     c.profile,
 	}
 
 	b, err := gob.Encode(exported)
@@ -231,17 +221,24 @@ func (c *Configuration) NewProfile(name string, password []byte) (profile, error
 	if err := c.setupKeyringItem(profile.ID, true); err != nil {
 		return profile, err
 	}
-	if password == nil {
-		return profile, c.Save()
+
+	if err := c.SetProfile(profile.ID); err != nil {
+		return profile, err
 	}
+
+	if password == nil {
+		return profile, nil
+	}
+
 	key, err := security.NewKeyFromPassword(password)
 	if err != nil {
 		return profile, err
 	}
+
 	if err := c.SetKey(key); err != nil {
 		return profile, err
 	}
-	return profile, c.Save()
+	return profile, nil
 }
 
 // AddProfile adds a profile to th configuration.
