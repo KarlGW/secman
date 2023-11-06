@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/KarlGW/secman/internal/security"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -38,7 +39,7 @@ func TestConfigure(t *testing.T) {
 					path: filepath.Join(user1Path, profilesFile),
 				},
 				path:    user1Path,
-				keyring: mockKeyring{},
+				keyring: &mockKeyring{},
 			},
 			wantErr: nil,
 			before: func() error {
@@ -62,8 +63,10 @@ func TestConfigure(t *testing.T) {
 			input: []Option{
 				func(c *Configuration) {
 					c.path = user2Path
+					c.keyring.Set("", "user2", "{}")
 				},
-			}, want: Configuration{
+			},
+			want: Configuration{
 				Username:  "user2",
 				ProfileID: "A1A1",
 				profile: profile{
@@ -79,8 +82,13 @@ func TestConfigure(t *testing.T) {
 					},
 					path: filepath.Join(user2Path, profilesFile),
 				},
-				path:    user2Path,
-				keyring: mockKeyring{},
+				path:        user2Path,
+				storagePath: filepath.Join(user2Path, "collections/A1A1.sec"),
+				keyring: &mockKeyring{
+					data: map[string]string{
+						"user2": "{}",
+					},
+				},
 			},
 			before: func() error {
 				currentUser = func() (*user.User, error) {
@@ -104,14 +112,14 @@ func TestConfigure(t *testing.T) {
 			}
 			opts := []Option{
 				func(c *Configuration) {
-					c.keyring = mockKeyring{}
+					c.keyring = &mockKeyring{}
 				},
 			}
 			opts = append(opts, test.input...)
 
 			got, gotErr := Configure(opts...)
 
-			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Configuration{}, profiles{}, profile{}, keyringItem{}), cmpopts.IgnoreFields(Configuration{}, "u")); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(Configuration{}, profiles{}, profile{}, keyringItem{}, mockKeyring{}), cmpopts.IgnoreFields(Configuration{}, "u")); diff != "" {
 				t.Errorf("Configure() = unexpected result (-want +got)\n%s\n", diff)
 			}
 
@@ -126,12 +134,171 @@ func TestConfigure(t *testing.T) {
 	}
 }
 
-type mockKeyring struct{}
+func TestConfiguration_SetStorageKey(t *testing.T) {
+	var tests = []struct {
+		name  string
+		input struct {
+			c Configuration
+			k security.Key
+		}
+		want    []byte
+		wantErr error
+	}{
+		{
+			name: "set storage key",
+			input: struct {
+				c Configuration
+				k security.Key
+			}{
+				c: Configuration{
+					profile: profile{
+						ID: "A1A1",
+					},
+					keyringItem: keyringItem{},
+					keyring:     &mockKeyring{},
+				},
+				k: security.Key{
+					Value: []byte(`test`),
+				},
+			},
+			want: []byte(`test`),
+		},
+		{
+			name: "set storage key (key is set)",
+			input: struct {
+				c Configuration
+				k security.Key
+			}{
+				c: Configuration{
+					profile: profile{
+						ID: "A1A1",
+					},
+					keyringItem: keyringItem{
+						Key: security.Key{
+							Value: []byte(`test`),
+						},
+					},
+					keyring: &mockKeyring{},
+				},
+				k: security.Key{
+					Value: []byte(`test`),
+				},
+			},
+			want: []byte(`test`),
+		},
+	}
 
-func (m mockKeyring) Get(service, user string) (string, error) {
-	return "{}", nil
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			gotErr := test.input.c.SetStorageKey(test.input.k)
+			got := test.input.c.StorageKey().Value
+
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("SetStorageKey() = unexpected result (-want +got)\n%s\n", diff)
+			}
+
+			if diff := cmp.Diff(test.wantErr, gotErr, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("SetStorageKey() = unexpected error (-want +got)\n%s\n", diff)
+			}
+		})
+	}
 }
 
-func (m mockKeyring) Set(service, user, password string) error {
+func TestConfiguration_SetKey(t *testing.T) {
+	var tests = []struct {
+		name  string
+		input struct {
+			c Configuration
+			k security.Key
+		}
+		want    []byte
+		wantErr error
+	}{
+		{
+			name: "set key",
+			input: struct {
+				c Configuration
+				k security.Key
+			}{
+				c: Configuration{
+					profile: profile{
+						ID: "A1A1",
+					},
+					keyringItem: keyringItem{},
+					keyring:     &mockKeyring{},
+				},
+				k: security.Key{
+					Value: []byte(`test`),
+				},
+			},
+			want: []byte(`test`),
+		},
+		{
+			name: "set key (storage key is set)",
+			input: struct {
+				c Configuration
+				k security.Key
+			}{
+				c: Configuration{
+					profile: profile{
+						ID: "A1A1",
+					},
+					keyringItem: keyringItem{
+						StorageKey: security.Key{
+							Value: []byte(`test`),
+						},
+					},
+					keyring: &mockKeyring{},
+				},
+				k: security.Key{
+					Value: []byte(`test`),
+				},
+			},
+			want: []byte(`test`),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			gotErr := test.input.c.SetKey(test.input.k)
+			got := test.input.c.Key().Value
+
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("SetKey() = unexpected result (-want +got)\n%s\n", diff)
+			}
+
+			if diff := cmp.Diff(test.wantErr, gotErr, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("SetKey() = unexpected error (-want +got)\n%s\n", diff)
+			}
+		})
+	}
+}
+
+type mockKeyring struct {
+	data map[string]string
+	err  error
+}
+
+func (m mockKeyring) Get(service, user string) (string, error) {
+	if m.err != nil {
+		return "", m.err
+	}
+
+	val, ok := m.data[user]
+	if !ok {
+		return "", ErrNotFound
+	}
+	return val, nil
+}
+
+func (m *mockKeyring) Set(service, user, password string) error {
+	if m.err != nil {
+		return m.err
+	}
+
+	if m.data == nil {
+		m.data = make(map[string]string)
+	}
+	m.data[user] = password
 	return nil
 }
