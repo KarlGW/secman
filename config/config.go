@@ -138,19 +138,21 @@ func (c *Configuration) Load() error {
 }
 
 // Save the Configuration to file.
-func (c Configuration) Save() (err error) {
+func (c Configuration) Save() error {
 	file, err := filesystem.OpenFile(filepath.Join(c.path, configFile), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if e := file.Close(); e != nil {
-			err = e
-		}
-	}()
 
-	_, err = file.Write(c.YAML())
-	return c.profiles.Save()
+	if _, err = file.Write(c.YAML()); err != nil {
+		return err
+	}
+
+	if err := c.profiles.Save(); err != nil {
+		return err
+	}
+
+	return file.Close()
 }
 
 // SetStorageKey sets the storage key to the configuration.
