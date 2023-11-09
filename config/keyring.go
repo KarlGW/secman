@@ -30,9 +30,8 @@ func (k keyring) Set(service, user, password string) error {
 	return kr.Set(service, user, password)
 }
 
-// keyringItem contains a key for encryption, a secondary key
-// for encryption (if a secondary storage is used) and
-// a salted hashed password.
+// keyringItem contains a key (password) for encryption of secrets and
+// a storageKey for encrypting the secret collection file.
 type keyringItem struct {
 	// Key set by user. Contains hash.
 	Key security.Key `json:"key"`
