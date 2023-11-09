@@ -2,6 +2,7 @@ package command
 
 import (
 	"errors"
+	"strings"
 	"syscall"
 
 	"github.com/KarlGW/secman/config"
@@ -74,12 +75,24 @@ func handler(ctx *cli.Context) (*secret.Handler, error) {
 }
 
 // passwordPrompt prompts for entering a password.
-func passwordPrompt() ([]byte, error) {
-	output.Print("Enter password: ")
+func passwordPrompt(messages ...string) ([]byte, error) {
+	var m string
+	if len(messages) == 0 {
+		m = "Enter password: "
+	} else {
+		var b strings.Builder
+		for _, msg := range messages {
+			b.WriteString(msg)
+		}
+		m = b.String()
+	}
+	output.Print(m)
 	p, err := term.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 		return nil, err
 	}
-	output.PrintEmptyln()
+	if m[0] != '\r' {
+		output.PrintEmptyln()
+	}
 	return p, nil
 }
