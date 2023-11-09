@@ -36,23 +36,18 @@ func NewFileSystem(path string, options ...FileSystemOption) FileSystem {
 }
 
 // Save data to the file.
-func (f FileSystem) Save(data []byte) (err error) {
+func (f FileSystem) Save(data []byte) error {
 	file, err := filesystem.OpenFile(f.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrStorageSourceNotFound, err)
 	}
-
-	defer func() {
-		if e := file.Close(); e != nil {
-			err = fmt.Errorf("%w: %w", ErrStorage, e)
-		}
-	}()
-
 	if _, err := file.Write(data); err != nil {
 		return fmt.Errorf("%w: %w", ErrStorage, err)
 	}
-
-	return err
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("%w: %w", ErrStorage, err)
+	}
+	return nil
 }
 
 // Load data from the file.

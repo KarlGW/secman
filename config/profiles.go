@@ -65,19 +65,15 @@ func (p *profiles) Load() error {
 }
 
 // Save the profiles to file.
-func (p profiles) Save() (err error) {
+func (p profiles) Save() error {
 	file, err := filesystem.OpenFile(p.path, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if e := file.Close(); e != nil {
-			err = e
-		}
-	}()
-
-	_, err = file.Write(p.YAML())
-	return err
+	if _, err = file.Write(p.YAML()); err != nil {
+		return err
+	}
+	return file.Close()
 }
 
 // Get a profile.
