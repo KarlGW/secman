@@ -14,6 +14,7 @@ import (
 var (
 	user1Path = filepath.Join("../testdata", "user1", dir)
 	user2Path = filepath.Join("../testdata", "user2", dir)
+	user3Path = filepath.Join("../testdata", "user3", dir)
 )
 
 func TestConfigure(t *testing.T) {
@@ -23,29 +24,40 @@ func TestConfigure(t *testing.T) {
 		want    Configuration
 		wantErr error
 		before  func() error
-		after   func() error
 	}{
 		{
-			name: "default bare config",
+			name: "with configuration",
 			input: []Option{
 				func(c *Configuration) {
 					c.path = user1Path
+					c.keyring.Set("", "user1", "{}")
 				},
 			},
 			want: Configuration{
-				Username: "user1",
+				Username:  "user1",
+				ProfileID: "AAAA",
+				profile: profile{
+					ID:   "AAAA",
+					Name: "user1",
+				},
 				profiles: profiles{
-					p:    map[string]profile{},
+					p: map[string]profile{
+						"AAAA": {
+							ID:   "AAAA",
+							Name: "user1",
+						},
+					},
 					path: filepath.Join(user1Path, profilesFile),
 				},
-				path:    user1Path,
-				keyring: &mockKeyring{},
+				path:        user1Path,
+				storagePath: filepath.Join(user1Path, "collections/AAAA.sec"),
+				keyring: &mockKeyring{
+					data: map[string]string{
+						"user1": "{}",
+					},
+				},
 			},
-			wantErr: nil,
 			before: func() error {
-				newUUID = func() string {
-					return "AAAA"
-				}
 				currentUser = func() (*user.User, error) {
 					return &user.User{
 						Username: "user1",
@@ -54,43 +66,28 @@ func TestConfigure(t *testing.T) {
 				}
 				return nil
 			},
-			after: func() error {
-				return os.RemoveAll(user1Path)
-			},
 		},
 		{
-			name: "with configuration",
+			name: "default bare config",
 			input: []Option{
 				func(c *Configuration) {
 					c.path = user2Path
-					c.keyring.Set("", "user2", "{}")
 				},
 			},
 			want: Configuration{
-				Username:  "user2",
-				ProfileID: "A1A1",
-				profile: profile{
-					ID:   "A1A1",
-					Name: "user2",
-				},
+				Username: "user2",
 				profiles: profiles{
-					p: map[string]profile{
-						"A1A1": {
-							ID:   "A1A1",
-							Name: "user2",
-						},
-					},
+					p:    map[string]profile{},
 					path: filepath.Join(user2Path, profilesFile),
 				},
-				path:        user2Path,
-				storagePath: filepath.Join(user2Path, "collections/A1A1.sec"),
-				keyring: &mockKeyring{
-					data: map[string]string{
-						"user2": "{}",
-					},
-				},
+				path:    user2Path,
+				keyring: &mockKeyring{},
 			},
+			wantErr: nil,
 			before: func() error {
+				newUUID = func() string {
+					return "BBBB"
+				}
 				currentUser = func() (*user.User, error) {
 					return &user.User{
 						Username: "user2",
@@ -99,17 +96,19 @@ func TestConfigure(t *testing.T) {
 				}
 				return nil
 			},
-			after: func() error {
-				return nil
-			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Cleanup(func() {
+				_ = os.RemoveAll(user2Path)
+				newUUID = originalUUID
+			})
 			if err := test.before(); err != nil {
 				t.Errorf("error in test: %v\n", err)
 			}
+
 			opts := []Option{
 				func(c *Configuration) {
 					c.keyring = &mockKeyring{}
@@ -125,10 +124,6 @@ func TestConfigure(t *testing.T) {
 
 			if diff := cmp.Diff(test.wantErr, gotErr, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("Configure() = unexpected error (-want +got)\n%s\n", diff)
-			}
-
-			if err := test.after(); err != nil {
-				t.Errorf("error in test: %v\n", err)
 			}
 		})
 	}
@@ -152,7 +147,7 @@ func TestConfiguration_SetStorageKey(t *testing.T) {
 			}{
 				c: Configuration{
 					profile: profile{
-						ID: "A1A1",
+						ID: "AAAA",
 					},
 					keyringItem: keyringItem{},
 					keyring:     &mockKeyring{},
@@ -171,7 +166,7 @@ func TestConfiguration_SetStorageKey(t *testing.T) {
 			}{
 				c: Configuration{
 					profile: profile{
-						ID: "A1A1",
+						ID: "AAAA",
 					},
 					keyringItem: keyringItem{
 						Key: security.Key{
@@ -222,7 +217,7 @@ func TestConfiguration_SetKey(t *testing.T) {
 			}{
 				c: Configuration{
 					profile: profile{
-						ID: "A1A1",
+						ID: "AAAA",
 					},
 					keyringItem: keyringItem{},
 					keyring:     &mockKeyring{},
@@ -241,7 +236,7 @@ func TestConfiguration_SetKey(t *testing.T) {
 			}{
 				c: Configuration{
 					profile: profile{
-						ID: "A1A1",
+						ID: "AAAA",
 					},
 					keyringItem: keyringItem{
 						StorageKey: security.Key{
@@ -269,6 +264,236 @@ func TestConfiguration_SetKey(t *testing.T) {
 
 			if diff := cmp.Diff(test.wantErr, gotErr, cmpopts.EquateErrors()); diff != "" {
 				t.Errorf("SetKey() = unexpected error (-want +got)\n%s\n", diff)
+			}
+		})
+	}
+}
+
+func TestConfiguration_ExportImport(t *testing.T) {
+	var tests = []struct {
+		name  string
+		input struct {
+			c          Configuration
+			encryptKey []byte
+			decryptKey []byte
+		}
+		want    export
+		wantErr error
+		after   func() error
+	}{
+		{
+			name: "export/import successful",
+			input: struct {
+				c          Configuration
+				encryptKey []byte
+				decryptKey []byte
+			}{
+				c: Configuration{
+					profile: profile{
+						ID: "AAAA",
+					},
+					keyringItem: keyringItem{
+						Key:        security.Key{Value: []byte(`test1`)},
+						StorageKey: security.Key{Value: []byte(`test2`)},
+					},
+				},
+				encryptKey: []byte(`test`),
+				decryptKey: []byte(`test`),
+			},
+			want: export{
+				Version: exportVersion,
+				Profile: profile{
+					ID: "AAAA",
+				},
+				KeyringItem: keyringItem{
+					Key:        security.Key{Value: []byte(`test1`)},
+					StorageKey: security.Key{Value: []byte(`test2`)},
+				},
+			},
+		},
+		{
+			name: "import fails",
+			input: struct {
+				c          Configuration
+				encryptKey []byte
+				decryptKey []byte
+			}{
+				c: Configuration{
+					profile: profile{
+						ID: "AAAA",
+					},
+					keyringItem: keyringItem{
+						Key:        security.Key{Value: []byte(`test1`)},
+						StorageKey: security.Key{Value: []byte(`test2`)},
+					},
+				},
+				encryptKey: []byte(`test`),
+				decryptKey: []byte(`wrong`),
+			},
+			wantErr: security.ErrInvalidKey,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			exportedPath := filepath.Join(user1Path, "export.sec")
+			t.Cleanup(func() {
+				_ = os.RemoveAll(exportedPath)
+			})
+
+			eKey, _ := security.NewSHA256FromPassword(test.input.encryptKey)
+			dKey, _ := security.NewSHA256FromPassword(test.input.decryptKey)
+
+			_ = test.input.c.Export(exportedPath, eKey)
+			got, gotErr := Import(exportedPath, dKey)
+
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(keyringItem{})); diff != "" {
+				t.Errorf("Export()/Import() = unexpected result (-want +got)\n%s\n", diff)
+			}
+
+			if diff := cmp.Diff(test.wantErr, gotErr, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("Export()/Import() = unexpected error (-want +got)\n%s\n", diff)
+			}
+		})
+	}
+}
+
+func TestConfiguration_NewProfile(t *testing.T) {
+	var tests = []struct {
+		name  string
+		input struct {
+			name     string
+			password []byte
+		}
+		want struct {
+			config  Configuration
+			profile profile
+		}
+		wantErr error
+		before  func() error
+	}{
+		{
+			name: "new profile",
+			input: struct {
+				name     string
+				password []byte
+			}{
+				name: "user3",
+			},
+			want: struct {
+				config  Configuration
+				profile profile
+			}{
+				config: Configuration{
+					ProfileID: "CCCC",
+					profile: profile{
+						ID:   "CCCC",
+						Name: "user3",
+					},
+					profiles: profiles{
+						p: map[string]profile{
+							"CCCC": {
+								ID:   "CCCC",
+								Name: "user3",
+							},
+						},
+						path: filepath.Join(user3Path, "profiles.yaml"),
+					},
+					path: user3Path,
+					keyringItem: keyringItem{
+						isSet: true,
+					},
+					keyring: &mockKeyring{},
+				},
+				profile: profile{
+					ID:   "CCCC",
+					Name: "user3",
+				},
+			},
+			before: func() error {
+				newUUID = func() string {
+					return "CCCC"
+				}
+				return nil
+			},
+		},
+		{
+			name: "new profile - with password",
+			input: struct {
+				name     string
+				password []byte
+			}{
+				name:     "user3",
+				password: []byte(`12345`),
+			},
+			want: struct {
+				config  Configuration
+				profile profile
+			}{
+				config: Configuration{
+					ProfileID: "CCCC",
+					profile: profile{
+						ID:   "CCCC",
+						Name: "user3",
+					},
+					profiles: profiles{
+						p: map[string]profile{
+							"CCCC": {
+								ID:   "CCCC",
+								Name: "user3",
+							},
+						},
+						path: filepath.Join(user3Path, "profiles.yaml"),
+					},
+					path: user3Path,
+					keyringItem: keyringItem{
+						isSet: true,
+					},
+					keyring: &mockKeyring{},
+				},
+				profile: profile{
+					ID:   "CCCC",
+					Name: "user3",
+				},
+			},
+			before: func() error {
+				newUUID = func() string {
+					return "CCCC"
+				}
+				return nil
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Cleanup(func() {
+				_ = os.RemoveAll(user3Path)
+				newUUID = originalUUID
+			})
+
+			if err := test.before(); err != nil {
+				t.Errorf("error in test: %v\n", err)
+			}
+
+			gotConfig := Configuration{
+				keyring:  &mockKeyring{},
+				path:     user3Path,
+				profiles: profiles{path: filepath.Join(user3Path, "profiles.yaml")},
+			}
+
+			gotProfile, gotErr := gotConfig.NewProfile(test.input.name, test.input.password)
+
+			if diff := cmp.Diff(test.want.config, gotConfig, cmp.AllowUnexported(Configuration{}, profiles{}, profile{}, keyringItem{}, mockKeyring{}), cmpopts.IgnoreFields(mockKeyring{}, "data"), cmpopts.IgnoreFields(keyringItem{}, "Key", "StorageKey")); diff != "" {
+				t.Errorf("NewProfile() = unexpected result (-want +got)\n%s\n", diff)
+			}
+
+			if diff := cmp.Diff(test.want.profile, gotProfile, cmp.AllowUnexported(profile{})); diff != "" {
+				t.Errorf("NewProfile() = unexpected result (-want +got)\n%s\n", diff)
+			}
+
+			if diff := cmp.Diff(test.wantErr, gotErr, cmpopts.EquateErrors()); diff != "" {
+				t.Errorf("NewProfile() = unexpected error (-want +got)\n%s\n", diff)
 			}
 		})
 	}
@@ -302,3 +527,5 @@ func (m *mockKeyring) Set(service, user, password string) error {
 	m.data[user] = password
 	return nil
 }
+
+var originalUUID = newUUID

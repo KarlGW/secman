@@ -243,7 +243,7 @@ func (c *Configuration) NewProfile(name string, password []byte) (profile, error
 	return profile, nil
 }
 
-// AddProfile adds a profile to th configuration.
+// AddProfile adds a profile to the configuration.
 func (c *Configuration) AddProfile(p profile, overwrite bool) error {
 	if _, ok := c.profiles.p[p.ID]; ok {
 		if !overwrite {

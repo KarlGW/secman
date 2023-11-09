@@ -10,6 +10,14 @@ the secrets safe.
 * [Install](#install)
   * [Autocompletion](#autocompletion)
 * [Usage](#usage)
+  * [Initial setup](#initial-setup)
+  * [Generate a secret](#generate-a-secret)
+  * [Create a secret](#create-a-secret)
+  * [Get a secret](#get-a-secret)
+  * [Update a secret](#update-a-secret)
+  * [Delete a secret](#delete-a-secret)
+  * [Exporting a profile](#exporting-a-profile)
+  * [Importing a profile](#importing-a-profile)
 
 
 ## Introduction
@@ -142,13 +150,13 @@ be used for encrypting the secrets in the collection.
 
 To update the password/key for all current and future secrets, run the command again.
 
-### Generating a secret
+### Generate a secret
 
 ```sh
 secman generate
 ```
 
-### Adding a secret
+### Create a secret
 
 **Set value from flag**
 
@@ -171,7 +179,7 @@ echo "value" | secman create --name <name>
 secman generate | secman create --name <name>
 ```
 
-### Retreive a secret
+### Get a secret
 
 **List details of all secrets**
 
@@ -225,4 +233,22 @@ secman generate | secman update --name <name>
 
 ```sh
 secman delete --name <name>
+```
+
+### Exporting a profile
+
+The currently set profile and it associated file and secret encryption keys can be exported. Before a file is exported the secret key (password) of the profile must be entered. In addition to this the
+resulting file is encrypted with yet another password.
+
+This password must be used when importing the profile to decrypt
+the file.
+
+```sh
+secman profile export --file <output-file>
+```
+
+### Importing a profile
+
+```sh
+secman profile import --file <input-file>
 ```
