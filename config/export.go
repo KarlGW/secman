@@ -12,7 +12,7 @@ var (
 	exportVersion = strings.Split(version.Version(), ".")[0]
 )
 
-// export is an exported profile and key.
+// export is an exported profile and keys.
 type export struct {
 	Profile     profile
 	KeyringItem keyringItem
