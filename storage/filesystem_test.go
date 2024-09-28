@@ -124,7 +124,7 @@ func setupFileSystemTest(dirShouldExist, fileShouldExist bool) {
 	}
 }
 
-func cleanupFileSystemTest(dirShouldExist, fileShouldExist bool) {
+func cleanupFileSystemTest(_, _ bool) {
 	os.Remove(filepath.Join("../", _testFullPath))
 	os.RemoveAll(filepath.Join("../", _testRoot, _testDir))
 }

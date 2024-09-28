@@ -268,8 +268,9 @@ func Generate(length int, specialChars bool) string {
 		chars += specialCharset
 	}
 
+	len := len(chars)
 	for i := 0; i < length; i++ {
-		builder.WriteByte(chars[rand.Intn(len(chars))])
+		builder.WriteByte(chars[rand.Intn(len)])
 	}
 
 	return builder.String()
